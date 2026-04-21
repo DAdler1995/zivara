@@ -4,6 +4,7 @@ import { colors } from '../theme'
 import DashboardScreen from '../screens/DashboardScreen'
 import CharacterScreen from '../screens/CharacterScreen'
 import RewardsScreen from '../screens/RewardsScreen'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const Tab = createBottomTabNavigator()
 
@@ -21,6 +22,8 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
 }
 
 export default function MainTabs() {
+  const insets = useSafeAreaInsets()
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -28,8 +31,9 @@ export default function MainTabs() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom + 4,
+          paddingTop: 4,
         },
         tabBarActiveTintColor: colors.gold,
         tabBarInactiveTintColor: colors.textFaint,
@@ -37,7 +41,6 @@ export default function MainTabs() {
           fontSize: 10,
           letterSpacing: 1,
           textTransform: 'uppercase',
-          fontFamily: 'serif',
         },
         tabBarIcon: ({ focused }) => (
           <TabIcon label={route.name} focused={focused} />

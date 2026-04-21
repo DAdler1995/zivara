@@ -5,17 +5,15 @@ import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from './src/context/AuthContext'
 import { View, ActivityIndicator } from 'react-native'
 import { colors } from './src/theme'
-
-// Screens
 import LoginScreen from './src/screens/LoginScreen'
 import RegisterScreen from './src/screens/RegisterScreen'
-import CreateCharacterScreen from './src/screens/CharacterScreen'
+import CreateCharacterScreen from './src/screens/CreateCharacterScreen'
 import MainTabs from './src/navigation/MainTabs'
 
 const Stack = createStackNavigator()
 
 function RootNavigator() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, character } = useAuth()
 
   if (isLoading) {
     return (
@@ -25,18 +23,25 @@ function RootNavigator() {
     )
   }
 
+  if (!isAuthenticated) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+      </Stack.Navigator>
+    )
+  }
+
+  // Check if character name is still the default username
+  // If character exists and has a real name, go straight to Main
+  const needsCharacterSetup = !character
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!isAuthenticated ? (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-        </>
+      {needsCharacterSetup ? (
+        <Stack.Screen name="CreateCharacter" component={CreateCharacterScreen} />
       ) : (
-        <>
-          <Stack.Screen name="CreateCharacter" component={CreateCharacterScreen} />
-          <Stack.Screen name="Main" component={MainTabs} />
-        </>
+        <Stack.Screen name="Main" component={MainTabs} />
       )}
     </Stack.Navigator>
   )

@@ -48,3 +48,8 @@ export async function getTodayActivity() {
   const response = await client.get('/activity/today')
   return response.data
 }
+
+export async function logWeight(weightLbs: number) {
+  const response = await client.post('/activity/weight', { weightLbs })
+  return response.data
+}
