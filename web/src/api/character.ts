@@ -17,3 +17,18 @@ export async function updateCharacterName(name: string): Promise<CharacterDto> {
   const response = await client.put<CharacterDto>('/character/name', { name })
   return response.data
 }
+
+export interface XpEventDto {
+  id: string
+  skillType: string
+  xpAmount: number
+  source: string
+  awardedAt: string
+}
+
+export async function getEventLog(page = 1, pageSize = 50): Promise<XpEventDto[]> {
+  const response = await client.get<XpEventDto[]>(
+    `/character/eventlog?page=${page}&pageSize=${pageSize}`
+  )
+  return response.data
+}

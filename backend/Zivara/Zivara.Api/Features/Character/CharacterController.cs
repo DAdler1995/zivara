@@ -1,6 +1,8 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Zivara.Api.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Zivara.Api.Features.Character;
 
@@ -10,10 +12,12 @@ namespace Zivara.Api.Features.Character;
 public class CharacterController : ControllerBase
 {
     private readonly ICharacterService _characterService;
+    private readonly ZivaraDbContext _db;
 
-    public CharacterController(ICharacterService characterService)
+    public CharacterController(ICharacterService characterService, ZivaraDbContext db)
     {
         _characterService = characterService;
+        _db = db;
     }
 
     [HttpGet]
@@ -53,6 +57,33 @@ public class CharacterController : ControllerBase
             return Conflict("Name is unavailable or you must wait 30 days between name changes.");
 
         return Ok(result);
+    }
+
+    [HttpGet("eventlog")]
+    public async Task<ActionResult<IEnumerable<XpEventDto>>> GetEventLog(
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 50)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var character = await _characterService.GetCharacterAsync(userId.Value);
+        if (character is null) return NotFound("No character found for this account.");
+
+        var events = await _db.XpEvents
+            .Where(e => e.CharacterId == character.Id)
+            .OrderByDescending(e => e.AwardedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return Ok(events.Select(e => new XpEventDto(
+            e.Id,
+            e.SkillType.ToString(),
+            e.XpAmount,
+            e.Source.ToString(),
+            e.AwardedAt
+        )));
     }
 
     private Guid? GetUserId()

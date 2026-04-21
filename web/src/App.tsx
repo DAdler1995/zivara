@@ -5,6 +5,8 @@ import RegisterPage from './pages/RegisterPage'
 import CreateCharacterPage from './pages/CreateCharacterPage'
 import Layout from './components/Layout'
 import DashboardPage from './pages/DashboardPage'
+import CharacterPage from './pages/CharacterPage'
+import RewardsPage from './pages/RewardsPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -37,7 +39,7 @@ export default function App() {
         path="/character"
         element={
           <ProtectedRoute>
-            <div style={{ color: 'var(--color-text)' }}>Character sheet coming soon</div>
+            <CharacterPage />
           </ProtectedRoute>
         }
       />
@@ -45,7 +47,7 @@ export default function App() {
         path="/rewards"
         element={
           <ProtectedRoute>
-            <div style={{ color: 'var(--color-text)' }}>Rewards coming soon</div>
+            <RewardsPage />
           </ProtectedRoute>
         }
       />

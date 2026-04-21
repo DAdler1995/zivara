@@ -16,6 +16,14 @@ public record CharacterDto(
     IEnumerable<SkillDto> Skills
 );
 
+public record XpEventDto(
+    Guid Id,
+    string SkillType,
+    int XpAmount,
+    string Source,
+    DateTime AwardedAt
+);
+
 public record CreateCharacterRequest(string Name);
 
 public record UpdateNameRequest(string Name);
