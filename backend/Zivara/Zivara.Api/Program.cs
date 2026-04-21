@@ -8,6 +8,7 @@ using Zivara.Api.Features.Activity;
 using Zivara.Api.Features.Auth;
 using Zivara.Api.Features.Character;
 using Zivara.Api.Features.Quests;
+using Zivara.Api.Features.Rewards;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,10 @@ builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<IQuestService, QuestService>();
 builder.Services.AddHostedService<QuestGenerationJob>();
 builder.Services.AddScoped<IQuestProgressService, QuestProgressService>();
+
+// rewards services
+builder.Services.AddScoped<IJarService, JarService>();
+builder.Services.AddHostedService<JarWeekCreationJob>();
 
 // jwt authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

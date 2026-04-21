@@ -2,6 +2,7 @@
 using Zivara.Api.Data;
 using Zivara.Api.Features.Activity;
 using Zivara.Api.Features.Character;
+using Zivara.Api.Features.Rewards;
 
 namespace Zivara.Api.Features.Quests;
 
@@ -14,12 +15,14 @@ public class QuestProgressService : IQuestProgressService
 {
     private readonly ZivaraDbContext _db;
     private readonly IXpService _xpService;
+    private readonly IJarService _jarService;
     private readonly ILogger<QuestProgressService> _logger;
 
-    public QuestProgressService(ZivaraDbContext db, IXpService xpService, ILogger<QuestProgressService> logger)
+    public QuestProgressService(ZivaraDbContext db, IXpService xpService, IJarService jarService, ILogger<QuestProgressService> logger)
     {
         _db = db;
         _xpService = xpService;
+        _jarService = jarService;
         _logger = logger;
     }
 
@@ -28,7 +31,6 @@ public class QuestProgressService : IQuestProgressService
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var todayStart = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
 
-        // Load active daily quests for this skill
         var activeQuests = await _db.Quests
             .Where(q => q.CharacterId == characterId &&
                         q.QuestType == QuestType.Daily &&
@@ -49,7 +51,6 @@ public class QuestProgressService : IQuestProgressService
                 quest.Status = QuestStatus.Completed;
                 quest.CompletedAt = DateTime.UtcNow;
 
-                // Award quest completion XP to Discipline
                 var questXp = GetQuestCompletionXp(skill);
                 await _xpService.AwardXpAsync(
                     characterId,
@@ -66,7 +67,6 @@ public class QuestProgressService : IQuestProgressService
 
         await _db.SaveChangesAsync();
 
-        // Check if all three daily quests are now completed
         await CheckAllQuestsCompletedAsync(characterId, todayStart);
     }
 
@@ -96,14 +96,13 @@ public class QuestProgressService : IQuestProgressService
             XpAwards.AllQuestsBonus,
             XpSource.QuestComplete);
 
+        // Award jar unlock for completing all daily quests today
+        await _jarService.AwardDailyQuestDayAsync(characterId);
+
         _logger.LogInformation(
-            "Character {CharacterId} completed all daily quests, bonus XP awarded",
+            "Character {CharacterId} completed all daily quests, bonus XP and jar unlock awarded",
             characterId);
     }
 
-    private static int GetQuestCompletionXp(SkillType skill)
-    {
-        // Base quest completion XP -- scales with skill tier in Phase 2
-        return 150;
-    }
+    private static int GetQuestCompletionXp(SkillType skill) => 150;
 }

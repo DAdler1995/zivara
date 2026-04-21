@@ -3,6 +3,7 @@ using Zivara.Api.Features.Activity;
 using Zivara.Api.Features.Auth;
 using Zivara.Api.Features.Character;
 using Zivara.Api.Features.Quests;
+using Zivara.Api.Features.Rewards;
 
 namespace Zivara.Api.Data;
 
@@ -31,6 +32,11 @@ public class ZivaraDbContext : DbContext
 
     // Quest
     public DbSet<Quest> Quests => Set<Quest>();
+
+    // Rewards
+    public DbSet<JarConfig> JarConfigs => Set<JarConfig>();
+    public DbSet<JarWeek> JarWeeks => Set<JarWeek>();
+    public DbSet<JarWeekActivity> JarWeekActivities => Set<JarWeekActivity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -146,6 +152,40 @@ public class ZivaraDbContext : DbContext
             entity.HasOne(e => e.Character)
                   .WithMany()
                   .HasForeignKey(e => e.CharacterId);
+        });
+
+        // JarConfig
+        modelBuilder.Entity<JarConfig>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.CharacterId).IsUnique();
+            entity.Property(e => e.WeeklyContribution).HasPrecision(10, 2);
+            entity.HasOne(e => e.Character)
+                  .WithOne()
+                  .HasForeignKey<JarConfig>(e => e.CharacterId);
+        });
+
+        // JarWeek
+        modelBuilder.Entity<JarWeek>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.CharacterId, e.WeekStartDate }).IsUnique();
+            entity.Property(e => e.MaxEarn).HasPrecision(10, 2);
+            entity.Property(e => e.UnlockedPercent).HasPrecision(5, 4);
+            entity.Ignore(e => e.UnlockedAmount); // computed property, not stored
+            entity.HasOne(e => e.Character)
+                  .WithMany()
+                  .HasForeignKey(e => e.CharacterId);
+        });
+
+        // JarWeekActivity
+        modelBuilder.Entity<JarWeekActivity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PercentAwarded).HasPrecision(5, 4);
+            entity.HasOne(e => e.JarWeek)
+                  .WithMany(w => w.Activities)
+                  .HasForeignKey(e => e.JarWeekId);
         });
     }
 }
