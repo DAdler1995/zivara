@@ -423,7 +423,7 @@ FodyWeavers.xsd
 .env.*.local
 
 # Node
-node_modules/
+**/node_modules/
 npm-debug.log*
 
 # Vite
@@ -435,3 +435,6 @@ mobile/dist/
 
 # Docker override file (contains real credentials)
 docker-compose.override.yml
+
+# Shared package build output
+shared/dist/
