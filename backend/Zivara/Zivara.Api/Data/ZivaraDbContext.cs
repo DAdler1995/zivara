@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Zivara.Api.Features.Activity;
 using Zivara.Api.Features.Auth;
 using Zivara.Api.Features.Character;
-using Zivara.Api.Features.Activity;
+using Zivara.Api.Features.Quests;
 
 namespace Zivara.Api.Data;
 
@@ -27,6 +28,9 @@ public class ZivaraDbContext : DbContext
     public DbSet<StepSyncLog> StepSyncLogs => Set<StepSyncLog>();
     public DbSet<XpEvent> XpEvents => Set<XpEvent>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+
+    // Quest
+    public DbSet<Quest> Quests => Set<Quest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -128,6 +132,15 @@ public class ZivaraDbContext : DbContext
 
         // ActivityLog
         modelBuilder.Entity<ActivityLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Character)
+                  .WithMany()
+                  .HasForeignKey(e => e.CharacterId);
+        });
+
+        // Quest
+        modelBuilder.Entity<Quest>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasOne(e => e.Character)

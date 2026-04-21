@@ -23,7 +23,6 @@
     <Folder Include="Controllers\" />
     <Folder Include="Features\Bosses\" />
     <Folder Include="Features\Rewards\" />
-    <Folder Include="Features\Quests\" />
   </ItemGroup>
 
 </Project>
