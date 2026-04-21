@@ -7,6 +7,7 @@ using Zivara.Api.Data;
 using Zivara.Api.Features.Activity;
 using Zivara.Api.Features.Auth;
 using Zivara.Api.Features.Character;
+using Zivara.Api.Features.Notifications;
 using Zivara.Api.Features.Quests;
 using Zivara.Api.Features.Rewards;
 
@@ -44,6 +45,11 @@ builder.Services.AddScoped<IQuestProgressService, QuestProgressService>();
 builder.Services.AddScoped<IJarService, JarService>();
 builder.Services.AddHostedService<JarWeekCreationJob>();
 builder.Services.AddScoped<IWishListService, WishListService>();
+
+// notification services
+builder.Services.AddHttpClient<ExpoNotificationService>();
+builder.Services.AddScoped<IExpoNotificationService, ExpoNotificationService>();
+builder.Services.AddHostedService<MovementReminderJob>();
 
 // jwt authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

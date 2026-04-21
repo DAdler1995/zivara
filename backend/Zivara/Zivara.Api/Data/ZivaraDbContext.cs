@@ -2,6 +2,7 @@
 using Zivara.Api.Features.Activity;
 using Zivara.Api.Features.Auth;
 using Zivara.Api.Features.Character;
+using Zivara.Api.Features.Notifications;
 using Zivara.Api.Features.Quests;
 using Zivara.Api.Features.Rewards;
 
@@ -38,6 +39,9 @@ public class ZivaraDbContext : DbContext
     public DbSet<JarWeek> JarWeeks => Set<JarWeek>();
     public DbSet<JarWeekActivity> JarWeekActivities => Set<JarWeekActivity>();
     public DbSet<WishListItem> WishListItems => Set<WishListItem>();
+
+    // DeviceToken
+    public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -194,6 +198,16 @@ public class ZivaraDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.EstimatedCost).HasPrecision(10, 2);
+            entity.HasOne(e => e.Character)
+                  .WithMany()
+                  .HasForeignKey(e => e.CharacterId);
+        });
+
+        // DeviceToken
+        modelBuilder.Entity<DeviceToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Token).IsUnique();
             entity.HasOne(e => e.Character)
                   .WithMany()
                   .HasForeignKey(e => e.CharacterId);

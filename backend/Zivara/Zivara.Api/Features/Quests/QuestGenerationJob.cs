@@ -1,4 +1,5 @@
 ﻿using Zivara.Api.Data;
+using Zivara.Api.Features.Notifications;
 using Microsoft.EntityFrameworkCore;
 
 namespace Zivara.Api.Features.Quests;
@@ -39,13 +40,12 @@ public class QuestGenerationJob : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ZivaraDbContext>();
         var questService = scope.ServiceProvider.GetRequiredService<IQuestService>();
+        var notificationService = scope.ServiceProvider.GetRequiredService<IExpoNotificationService>();
 
         try
         {
-            // Expire yesterday's incomplete quests
             await questService.ExpireOldQuestsAsync();
 
-            // Generate new quests for all characters
             var characterIds = await db.Characters
                 .Select(c => c.Id)
                 .ToListAsync();
@@ -54,6 +54,11 @@ public class QuestGenerationJob : BackgroundService
             {
                 await questService.GenerateDailyQuestsAsync(characterId);
             }
+
+            // Notify all characters that their daily quests are ready
+            await notificationService.SendToAllCharactersAsync(
+                "Daily Quests Ready",
+                "Your daily quests are ready. The realm awaits.");
 
             _logger.LogInformation("Quest generation complete for {Count} characters", characterIds.Count);
         }
