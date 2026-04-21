@@ -37,6 +37,7 @@ builder.Services.AddScoped<IActivityService, ActivityService>();
 // quest services
 builder.Services.AddScoped<IQuestService, QuestService>();
 builder.Services.AddHostedService<QuestGenerationJob>();
+builder.Services.AddScoped<IQuestProgressService, QuestProgressService>();
 
 // jwt authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

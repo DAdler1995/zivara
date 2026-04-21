@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Zivara.Api.Data;
 using Zivara.Api.Features.Character;
+using Zivara.Api.Features.Quests;
 
 namespace Zivara.Api.Features.Activity;
 
@@ -20,11 +21,13 @@ public class ActivityService : IActivityService
 {
     private readonly ZivaraDbContext _db;
     private readonly IXpService _xpService;
+    private readonly IQuestProgressService _questProgressService;
 
-    public ActivityService(ZivaraDbContext db, IXpService xpService)
+    public ActivityService(ZivaraDbContext db, IXpService xpService, IQuestProgressService questProgressService)
     {
         _db = db;
         _xpService = xpService;
+        _questProgressService = questProgressService;
     }
 
     public async Task<ActivityResponse> LogMealAsync(Guid characterId, LogMealRequest request)
@@ -52,6 +55,7 @@ public class ActivityService : IActivityService
         await _db.SaveChangesAsync();
 
         await _xpService.AwardXpAsync(characterId, SkillType.Nutrition, xpAmount, XpSource.MealLog, meal.Id);
+        await _questProgressService.ProcessActivityAsync(characterId, SkillType.Nutrition, 1);
 
         return new ActivityResponse($"Meal logged. The realm takes note of your provisions.", xpAmount, "Nutrition");
     }
@@ -84,6 +88,7 @@ public class ActivityService : IActivityService
 
         // Passive Discipline XP for logging any activity
         await _xpService.AwardXpAsync(characterId, SkillType.Discipline, XpAwards.PassiveActivityLog, XpSource.WorkoutLog, workout.Id);
+        await _questProgressService.ProcessActivityAsync(characterId, SkillType.Endurance, request.DurationMinutes);
 
         return new ActivityResponse("Training logged. Your endurance grows.", xpAmount, "Endurance");
     }
@@ -117,6 +122,7 @@ public class ActivityService : IActivityService
         await _db.SaveChangesAsync();
 
         await _xpService.AwardXpAsync(characterId, SkillType.Vitality, xpAmount, XpSource.WeightLog, weightLog.Id);
+        await _questProgressService.ProcessActivityAsync(characterId, SkillType.Vitality, 1);
 
         return new ActivityResponse(message, xpAmount, "Vitality");
     }
@@ -155,6 +161,7 @@ public class ActivityService : IActivityService
         }
 
         await _xpService.AwardXpAsync(characterId, SkillType.Hydration, xpAmount, XpSource.WaterLog, waterLog.Id);
+        await _questProgressService.ProcessActivityAsync(characterId, SkillType.Hydration, request.Glasses);
 
         return new ActivityResponse("Water logged. The body endures.", xpAmount, "Hydration");
     }
@@ -201,6 +208,7 @@ public class ActivityService : IActivityService
         await _db.SaveChangesAsync();
 
         await _xpService.AwardXpAsync(characterId, SkillType.Discipline, XpAwards.DailyCheckin, XpSource.DailyCheckin);
+        await _questProgressService.ProcessActivityAsync(characterId, SkillType.Discipline, 1);
 
         return new ActivityResponse("The realm acknowledges your presence, adventurer.", XpAwards.DailyCheckin, "Discipline");
     }
@@ -218,7 +226,7 @@ public class ActivityService : IActivityService
 
         if (existingLog is not null)
         {
-            // Update step count and adjust XP delta
+            var oldStepCount = existingLog.StepCount;
             var xpDelta = xpToAward - existingLog.XpAwarded;
 
             existingLog.StepCount = request.StepCount;
@@ -228,7 +236,10 @@ public class ActivityService : IActivityService
             await _db.SaveChangesAsync();
 
             if (xpDelta > 0)
+            {
                 await _xpService.AwardXpAsync(characterId, SkillType.Agility, xpDelta, XpSource.StepSync);
+                await _questProgressService.ProcessActivityAsync(characterId, SkillType.Agility, request.StepCount - oldStepCount);
+            }
 
             return new ActivityResponse($"Steps updated for {request.Date}.", xpDelta, "Agility");
         }
@@ -248,6 +259,7 @@ public class ActivityService : IActivityService
         await _db.SaveChangesAsync();
 
         await _xpService.AwardXpAsync(characterId, SkillType.Agility, xpToAward, XpSource.StepSync);
+        await _questProgressService.ProcessActivityAsync(characterId, SkillType.Agility, request.StepCount);
 
         return new ActivityResponse($"Steps synced. Agility trains with every road walked.", xpToAward, "Agility");
     }
