@@ -2,8 +2,7 @@ import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const client = axios.create({
-  baseURL: 'https://10.0.2.2:7043/api/v1', // Android emulator localhost
-  httpsAgent: undefined,
+  baseURL: 'http://192.168.1.3:5295/api/v1',
 })
 
 client.interceptors.request.use(async (config) => {
