@@ -26,6 +26,7 @@ public class ZivaraDbContext : DbContext
     public DbSet<WaterLog> WaterLogs => Set<WaterLog>();
     public DbSet<StepSyncLog> StepSyncLogs => Set<StepSyncLog>();
     public DbSet<XpEvent> XpEvents => Set<XpEvent>();
+    public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -120,6 +121,15 @@ public class ZivaraDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.CharacterId, e.SyncDate }).IsUnique();
+            entity.HasOne(e => e.Character)
+                  .WithMany()
+                  .HasForeignKey(e => e.CharacterId);
+        });
+
+        // ActivityLog
+        modelBuilder.Entity<ActivityLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
             entity.HasOne(e => e.Character)
                   .WithMany()
                   .HasForeignKey(e => e.CharacterId);

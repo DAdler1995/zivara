@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
 using Zivara.Api.Data;
+using Zivara.Api.Features.Activity;
 using Zivara.Api.Features.Auth;
 using Zivara.Api.Features.Character;
 
@@ -28,6 +29,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // character services
 builder.Services.AddScoped<ICharacterService, CharacterService>();
 builder.Services.AddScoped<IXpService, XpService>();
+
+// activity services
+builder.Services.AddScoped<IActivityService, ActivityService>();
 
 // jwt authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
