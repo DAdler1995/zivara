@@ -5,12 +5,17 @@ using Scalar.AspNetCore;
 using System.Text;
 using Zivara.Api.Data;
 using Zivara.Api.Features.Auth;
+using Zivara.Api.Features.Character;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddOpenApi();
 
 // database
@@ -19,6 +24,10 @@ builder.Services.AddDbContext<ZivaraDbContext>(options => options.UseNpgsql(buil
 // auth services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+// character services
+builder.Services.AddScoped<ICharacterService, CharacterService>();
+builder.Services.AddScoped<IXpService, XpService>();
 
 // jwt authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
