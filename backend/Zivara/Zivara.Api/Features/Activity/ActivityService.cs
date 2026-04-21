@@ -178,8 +178,31 @@ public class ActivityService : IActivityService
 
         if (lastLog is null) return false;
 
+        // Reverse XP for the removed glasses
+        var xpToReverse = lastLog.Glasses * XpAwards.WaterPerGlass;
+
+        // Check if daily bonus was awarded and needs reversing
+        var glassesToday = await _db.WaterLogs
+            .Where(w => w.CharacterId == characterId &&
+                        DateOnly.FromDateTime(w.LoggedAt) == today)
+            .SumAsync(w => w.Glasses);
+
+        var glassesAfterRemoval = glassesToday - lastLog.Glasses;
+
+        // If removing this log drops us below the daily goal, reverse the bonus too
+        if (glassesToday >= XpAwards.WaterDailyGoal && glassesAfterRemoval < XpAwards.WaterDailyGoal)
+        {
+            xpToReverse += XpAwards.WaterDailyBonus;
+        }
+
         _db.WaterLogs.Remove(lastLog);
         await _db.SaveChangesAsync();
+
+        // Reverse XP by writing a negative XP event
+        await _xpService.AwardXpAsync(characterId, SkillType.Hydration, -xpToReverse, XpSource.WaterLog);
+
+        // Reverse quest progress
+        await _questProgressService.ReverseProgressAsync(characterId, SkillType.Hydration, lastLog.Glasses);
 
         return true;
     }

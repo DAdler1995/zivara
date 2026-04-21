@@ -22,9 +22,9 @@ public class XpService : IXpService
 
     public async Task AwardXpAsync(Guid characterId, SkillType skill, int amount, XpSource source, Guid? sourceEntityId = null)
     {
-        if (amount <= 0) return;
+        if (amount == 0) return;
 
-        // Write the XP event -- this is the permanent ledger entry
+        // Write the XP event
         var xpEvent = new XpEvent
         {
             Id = Guid.NewGuid(),
@@ -38,7 +38,6 @@ public class XpService : IXpService
 
         _db.XpEvents.Add(xpEvent);
 
-        // Update the skill total and recalculate level
         var skillEntity = await _db.Skills
             .FirstOrDefaultAsync(s => s.CharacterId == characterId && s.SkillType == skill);
 
@@ -49,7 +48,9 @@ public class XpService : IXpService
         }
 
         var previousLevel = skillEntity.Level;
-        skillEntity.TotalXP += amount;
+
+        // Clamp TotalXP to 0 minimum -- XP cannot go below zero
+        skillEntity.TotalXP = Math.Max(0, skillEntity.TotalXP + amount);
         skillEntity.Level = XpTable.GetLevelFromXP(skillEntity.TotalXP);
         skillEntity.UpdatedAt = DateTime.UtcNow;
 

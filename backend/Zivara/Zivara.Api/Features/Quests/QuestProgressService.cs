@@ -9,6 +9,7 @@ namespace Zivara.Api.Features.Quests;
 public interface IQuestProgressService
 {
     Task ProcessActivityAsync(Guid characterId, SkillType skill, int value);
+    Task ReverseProgressAsync(Guid characterId, SkillType skill, int value);
 }
 
 public class QuestProgressService : IQuestProgressService
@@ -68,6 +69,32 @@ public class QuestProgressService : IQuestProgressService
         await _db.SaveChangesAsync();
 
         await CheckAllQuestsCompletedAsync(characterId, todayStart);
+    }
+
+    public async Task ReverseProgressAsync(Guid characterId, SkillType skill, int value)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var todayStart = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+
+        var activeQuests = await _db.Quests
+            .Where(q => q.CharacterId == characterId &&
+                        q.QuestType == QuestType.Daily &&
+                        q.SkillTarget == skill &&
+                        q.GeneratedAt >= todayStart &&
+                        q.Status != QuestStatus.Expired)
+            .ToListAsync();
+
+        if (activeQuests.Count == 0) return;
+
+        foreach (var quest in activeQuests)
+        {
+            // Only reverse if quest is not already completed
+            if (quest.Status == QuestStatus.Completed) continue;
+
+            quest.CurrentValue = Math.Max(0, quest.CurrentValue - value);
+        }
+
+        await _db.SaveChangesAsync();
     }
 
     private async Task CheckAllQuestsCompletedAsync(Guid characterId, DateTime todayStart)
