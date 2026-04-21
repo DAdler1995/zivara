@@ -3,17 +3,53 @@ import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from './src/context/AuthContext'
-import { View, ActivityIndicator } from 'react-native'
+import { View, ActivityIndicator, Platform } from 'react-native'
 import { colors } from './src/theme'
 import LoginScreen from './src/screens/LoginScreen'
 import RegisterScreen from './src/screens/RegisterScreen'
 import CreateCharacterScreen from './src/screens/CreateCharacterScreen'
 import MainTabs from './src/navigation/MainTabs'
+import {
+  initializeHealthConnect,
+  requestHealthPermissions,
+  getTodaySteps,
+  getLatestWeight,
+} from './src/services/HealthConnectService'
+import { syncSteps, syncWeight } from './src/api/activity'
 
 const Stack = createStackNavigator()
 
 function RootNavigator() {
   const { isAuthenticated, isLoading, character } = useAuth()
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    async function syncHealthData() {
+      if (Platform.OS !== 'android') return
+
+      const initialized = await initializeHealthConnect()
+      if (!initialized) return
+
+      const hasPermissions = await requestHealthPermissions()
+      if (!hasPermissions) return
+
+      // Sync today's steps
+      const steps = await getTodaySteps()
+      if (steps > 0) {
+        const today = new Date().toISOString().split('T')[0]
+        await syncSteps(today, steps).catch(() => {})
+      }
+
+      // Sync latest weight
+      const weightLbs = await getLatestWeight()
+      if (weightLbs) {
+        await syncWeight(weightLbs).catch(() => {})
+      }
+    }
+
+    syncHealthData()
+  }, [isAuthenticated])
 
   if (isLoading) {
     return (
@@ -32,8 +68,6 @@ function RootNavigator() {
     )
   }
 
-  // Check if character name is still the default username
-  // If character exists and has a real name, go straight to Main
   const needsCharacterSetup = !character
 
   return (
