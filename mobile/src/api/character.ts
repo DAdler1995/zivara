@@ -14,3 +14,8 @@ export async function updateCharacterName(name: string) {
   const response = await client.put('/character/name', { name })
   return response.data
 }
+
+export async function getEventLog(page = 1, pageSize = 30) {
+  const response = await client.get(`/character/eventlog?page=${page}&pageSize=${pageSize}`)
+  return response.data
+}
