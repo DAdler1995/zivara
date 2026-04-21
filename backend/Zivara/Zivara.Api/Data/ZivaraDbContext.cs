@@ -37,6 +37,7 @@ public class ZivaraDbContext : DbContext
     public DbSet<JarConfig> JarConfigs => Set<JarConfig>();
     public DbSet<JarWeek> JarWeeks => Set<JarWeek>();
     public DbSet<JarWeekActivity> JarWeekActivities => Set<JarWeekActivity>();
+    public DbSet<WishListItem> WishListItems => Set<WishListItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -186,6 +187,16 @@ public class ZivaraDbContext : DbContext
             entity.HasOne(e => e.JarWeek)
                   .WithMany(w => w.Activities)
                   .HasForeignKey(e => e.JarWeekId);
+        });
+
+        // WishListItem
+        modelBuilder.Entity<WishListItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EstimatedCost).HasPrecision(10, 2);
+            entity.HasOne(e => e.Character)
+                  .WithMany()
+                  .HasForeignKey(e => e.CharacterId);
         });
     }
 }

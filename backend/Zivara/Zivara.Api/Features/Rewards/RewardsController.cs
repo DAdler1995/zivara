@@ -11,11 +11,13 @@ namespace Zivara.Api.Features.Rewards;
 public class RewardsController : ControllerBase
 {
     private readonly IJarService _jarService;
+    private readonly IWishListService _wishListService;
     private readonly ICharacterService _characterService;
 
-    public RewardsController(IJarService jarService, ICharacterService characterService)
+    public RewardsController(IJarService jarService, IWishListService wishListService, ICharacterService characterService)
     {
         _jarService = jarService;
+        _wishListService = wishListService;
         _characterService = characterService;
     }
 
@@ -49,6 +51,56 @@ public class RewardsController : ControllerBase
         if (characterId is null) return NotFound("No character found for this account.");
 
         await _jarService.UpdateJarConfigAsync(characterId.Value, request.WeeklyContribution);
+        return NoContent();
+    }
+
+    [HttpGet("wishlist")]
+    public async Task<ActionResult<IEnumerable<WishListItemDto>>> GetWishList()
+    {
+        var characterId = await GetCharacterIdAsync();
+        if (characterId is null) return NotFound("No character found for this account.");
+
+        var result = await _wishListService.GetItemsAsync(characterId.Value);
+        return Ok(result);
+    }
+
+    [HttpPost("wishlist")]
+    public async Task<ActionResult<WishListItemDto>> CreateWishListItem(CreateWishListItemRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Label))
+            return BadRequest("Label is required.");
+
+        var characterId = await GetCharacterIdAsync();
+        if (characterId is null) return NotFound("No character found for this account.");
+
+        var result = await _wishListService.CreateItemAsync(characterId.Value, request);
+        return CreatedAtAction(nameof(GetWishList), result);
+    }
+
+    [HttpPut("wishlist/{id}")]
+    public async Task<ActionResult<WishListItemDto>> UpdateWishListItem(Guid id, UpdateWishListItemRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Label))
+            return BadRequest("Label is required.");
+
+        var characterId = await GetCharacterIdAsync();
+        if (characterId is null) return NotFound("No character found for this account.");
+
+        var result = await _wishListService.UpdateItemAsync(characterId.Value, id, request);
+        if (result is null) return NotFound("Wish list item not found.");
+
+        return Ok(result);
+    }
+
+    [HttpDelete("wishlist/{id}")]
+    public async Task<IActionResult> DeleteWishListItem(Guid id)
+    {
+        var characterId = await GetCharacterIdAsync();
+        if (characterId is null) return NotFound("No character found for this account.");
+
+        var deleted = await _wishListService.DeleteItemAsync(characterId.Value, id);
+        if (!deleted) return NotFound("Wish list item not found.");
+
         return NoContent();
     }
 

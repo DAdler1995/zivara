@@ -43,6 +43,7 @@ builder.Services.AddScoped<IQuestProgressService, QuestProgressService>();
 // rewards services
 builder.Services.AddScoped<IJarService, JarService>();
 builder.Services.AddHostedService<JarWeekCreationJob>();
+builder.Services.AddScoped<IWishListService, WishListService>();
 
 // jwt authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
