@@ -416,3 +416,22 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Environment variables - never commit these
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Vite
+web/dist/
+
+# Expo / React Native
+mobile/.expo/
+mobile/dist/
+
+# Docker override file (contains real credentials)
+docker-compose.override.yml
