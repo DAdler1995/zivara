@@ -17,7 +17,6 @@
         "backgroundColor": "#0d0d0d"
       },
       "package": "com.zivara.app",
-      "minSdkVersion": 26,
       "permissions": [
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_WEIGHT",
@@ -25,6 +24,7 @@
       ]
     },
     "plugins": [
+      "./plugins/withMinSdkVersion",
       [
         "react-native-health-connect",
         {
