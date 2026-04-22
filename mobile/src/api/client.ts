@@ -14,8 +14,17 @@ client.interceptors.request.use(async (config) => {
 })
 
 client.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('API Response:', response.status, response.config.url)
+    return response
+  },
   async (error) => {
+    console.error('API Error:', JSON.stringify({
+      message: error?.message,
+      code: error?.code,
+      url: error?.config?.url,
+      status: error?.response?.status,
+    }))
     if (error.response?.status === 401) {
       await AsyncStorage.removeItem('accessToken')
       await AsyncStorage.removeItem('refreshToken')

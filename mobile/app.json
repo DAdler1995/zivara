@@ -25,6 +25,7 @@
     },
     "plugins": [
       "./plugins/withMinSdkVersion",
+      "./plugins/withCleartextTraffic",
       [
         "react-native-health-connect",
         {
