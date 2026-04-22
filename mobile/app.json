@@ -17,6 +17,7 @@
         "backgroundColor": "#0d0d0d"
       },
       "package": "com.zivara.app",
+      "minSdkVersion": 26,
       "permissions": [
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_WEIGHT",
@@ -34,6 +35,11 @@
         }
       ],
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "17d5493b-303d-427e-ad1c-a6a616d71711"
+      }
+    }
   }
 }
