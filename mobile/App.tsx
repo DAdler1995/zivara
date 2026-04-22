@@ -23,33 +23,35 @@ function RootNavigator() {
   const { isAuthenticated, isLoading, character } = useAuth()
 
   useEffect(() => {
-    if (!isAuthenticated) return
+  if (!isAuthenticated) return
 
-    async function syncHealthData() {
-      if (Platform.OS !== 'android') return
+  async function syncHealthData() {
+    if (Platform.OS !== 'android') return
 
+    await new Promise(resolve => setTimeout(resolve, 3000))
+
+    try {
       const initialized = await initializeHealthConnect()
       if (!initialized) return
 
-      const hasPermissions = await requestHealthPermissions()
-      if (!hasPermissions) return
-
-      // Sync today's steps
+      // Skip permission request on startup -- only sync if already granted
       const steps = await getTodaySteps()
       if (steps > 0) {
         const today = new Date().toISOString().split('T')[0]
         await syncSteps(today, steps).catch(() => {})
       }
 
-      // Sync latest weight
       const weightLbs = await getLatestWeight()
       if (weightLbs) {
         await syncWeight(weightLbs).catch(() => {})
       }
+    } catch (err) {
+      console.log('Health Connect sync skipped:', err)
     }
+  }
 
-    syncHealthData()
-  }, [isAuthenticated])
+  syncHealthData()
+}, [isAuthenticated])
 
   if (isLoading) {
     return (

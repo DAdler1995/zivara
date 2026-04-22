@@ -28,8 +28,10 @@ export async function requestHealthPermissions(): Promise<boolean> {
 export async function getTodaySteps(): Promise<number> {
   try {
     const today = new Date()
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0))
-    const endOfDay = new Date(today.setHours(23, 59, 59, 999))
+    const startOfDay = new Date(today)
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(today)
+    endOfDay.setHours(23, 59, 59, 999)
 
     const result = await readRecords('Steps', {
       timeRangeFilter: {
@@ -39,7 +41,7 @@ export async function getTodaySteps(): Promise<number> {
       },
     })
 
-    return result.records.reduce((sum, record) => sum + record.count, 0)
+    return result.records.reduce((sum: number, record: any) => sum + record.count, 0)
   } catch {
     return 0
   }
@@ -60,9 +62,7 @@ export async function getLatestWeight(): Promise<number | null> {
 
     if (result.records.length === 0) return null
 
-    // Get the most recent weight entry
     const latest = result.records[result.records.length - 1]
-    // Health Connect stores weight in kg, convert to lbs
     return latest.weight.inKilograms * 2.20462
   } catch {
     return null

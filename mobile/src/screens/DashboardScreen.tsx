@@ -23,6 +23,7 @@ import LogMealModal from '../components/LogMealModal'
 import LogWorkoutModal from '../components/LogWorkoutModal'
 import LogWeightModal from '../components/LogWeightModal'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { requestHealthPermissions, initializeHealthConnect } from '../services/HealthConnectService'
 
 export default function DashboardScreen() {
   const { character } = useAuth()
@@ -34,6 +35,17 @@ export default function DashboardScreen() {
   const [showMeal, setShowMeal] = useState(false)
   const [showWorkout, setShowWorkout] = useState(false)
   const [showWeight, setShowWeight] = useState(false)
+  const [healthConnectGranted, setHealthConnectGranted] = useState(false)
+
+  async function handleRequestHealthPermissions() {
+    const initialized = await initializeHealthConnect()
+    if (!initialized) return
+    const granted = await requestHealthPermissions()
+    setHealthConnectGranted(granted)
+    if (granted) {
+      await loadData()
+    }
+  }
 
   async function loadData() {
     try {
@@ -238,6 +250,11 @@ async function handleWaterTap(index: number) {
             <ActionButton
               label="Log Weight"
               onPress={() => setShowWeight(true)}
+            />
+            <ActionButton
+              label="Health Connect"
+              done={healthConnectGranted}
+              onPress={handleRequestHealthPermissions}
             />
           </View>
         </View>
