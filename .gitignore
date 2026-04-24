@@ -444,3 +444,8 @@ shared/dist/
 **/appsettings.Local.jsonweb/.env.development
 
 backend/Zivara/Zivara.Api/appsettings.Local.json
+
+# Claude configuration files
+CLAUDE.md
+CLAUDE.local.md
+docs/
