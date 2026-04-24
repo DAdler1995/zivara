@@ -421,6 +421,7 @@ FodyWeavers.xsd
 .env
 .env.local
 .env.*.local
+web/.env.development
 
 # Node
 **/node_modules/
@@ -441,3 +442,5 @@ shared/dist/
 
 # Local config with real credentials
 **/appsettings.Local.jsonweb/.env.development
+
+backend/Zivara/Zivara.Api/appsettings.Local.json
