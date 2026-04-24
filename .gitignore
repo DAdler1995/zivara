@@ -440,4 +440,4 @@ docker-compose.override.yml
 shared/dist/
 
 # Local config with real credentials
-**/appsettings.Local.json
+**/appsettings.Local.jsonweb/.env.development
