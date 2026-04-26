@@ -4,8 +4,10 @@ import { checkNameAvailability, updateCharacterName } from '../api/character'
 import { useAuth } from '../context/useAuth'
 import Input from '../components/Input'
 import Button from '../components/Button'
+import { usePageTitle } from '../context/usePageTitle'
 
 export default function CreateCharacterPage() {
+  usePageTitle('Begin Your Journey')
   const [name, setName] = useState('')
   const [available, setAvailable] = useState<boolean | null>(null)
   const [checking, setChecking] = useState(false)

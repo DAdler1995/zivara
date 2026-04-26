@@ -4,8 +4,10 @@ import { login } from '../api/auth'
 import { useAuth } from '../context/useAuth'
 import Input from '../components/Input'
 import Button from '../components/Button'
+import { usePageTitle } from '../context/usePageTitle'
 
 export default function LoginPage() {
+  usePageTitle('Login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

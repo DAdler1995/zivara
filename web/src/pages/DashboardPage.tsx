@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/useAuth'
+import { usePageTitle } from '../context/usePageTitle'
 import { getTodayActivity, checkIn, logWater, removeLastWater } from '../api/activity'
 import { getDailyQuests } from '../api/quests'
 import { getJarSummary } from '../api/rewards'
@@ -11,6 +12,7 @@ import LogWorkoutModal from '../components/LogWorkoutModal'
 import LogWeightModal from '../components/LogWeightModal'
 
 export default function DashboardPage() {
+  usePageTitle('Dashboard')
   const { character } = useAuth()
   const [activity, setActivity] = useState<TodayActivityResponse | null>(null)
   const [quests, setQuests] = useState<DailyQuestsResponse | null>(null)

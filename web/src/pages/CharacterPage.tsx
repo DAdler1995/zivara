@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/useAuth'
 import { getEventLog } from '../api/character'
 import type { XpEventDto } from '../api/character'
+import { usePageTitle } from '../context/usePageTitle'
 
 const SKILL_DESCRIPTIONS: Record<string, { role: string; trains: string }> = {
   Agility: { role: 'Accuracy — determines whether attacks land', trains: 'Daily steps via Health Connect' },
@@ -35,6 +36,7 @@ const SOURCE_LABELS: Record<string, string> = {
 }
 
 export default function CharacterPage() {
+  usePageTitle('Character')
   const { character } = useAuth()
   const [events, setEvents] = useState<XpEventDto[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)

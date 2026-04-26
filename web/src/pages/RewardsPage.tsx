@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { getJarSummary, getWishList, createWishListItem, deleteWishListItem } from '../api/rewards'
 import type { JarSummaryResponse, WishListItemDto } from '../api/rewards'
+import { usePageTitle } from '../context/usePageTitle'
 
 export default function RewardsPage() {
+  usePageTitle('Rewards')
   const [jar, setJar] = useState<JarSummaryResponse | null>(null)
   const [wishList, setWishList] = useState<WishListItemDto[]>([])
   const [loading, setLoading] = useState(true)

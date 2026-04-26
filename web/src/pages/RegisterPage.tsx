@@ -4,8 +4,10 @@ import { register } from '../api/auth'
 import { useAuth } from '../context/useAuth'
 import Input from '../components/Input'
 import Button from '../components/Button'
+import { usePageTitle } from '../context/usePageTitle'
 
 export default function RegisterPage() {
+  usePageTitle('Register')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
