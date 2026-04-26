@@ -37,93 +37,47 @@ export default function LogWorkoutModal({ onClose, onSuccess }: LogWorkoutModalP
   return (
     <div
       onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.75)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 200, padding: '1rem',
-      }}
+      className="fixed inset-0 bg-black/75 flex items-center justify-center z-200 p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '4px',
-          width: '100%',
-          maxWidth: '440px',
-          overflow: 'hidden',
-        }}
+        className="w-full max-w-110 bg-(--color-surface) border border-(--color-border) rounded-sm flex flex-col max-h-[calc(100vh-4rem)]"
       >
-        {/* Header */}
-        <div style={{
-          padding: '1rem 1.25rem',
-          borderBottom: '1px solid var(--color-border)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <h2 style={{ fontSize: '1rem', color: 'var(--color-gold)' }}>Log Workout</h2>
+        {/* Header — always visible */}
+        <div className="shrink-0 px-5 py-4 border-b border-(--color-border) flex justify-between items-center">
+          <h2 className="text-base">Log Workout</h2>
           <button
             onClick={onClose}
-            style={{
-              background: 'none', border: 'none',
-              color: 'var(--color-text-muted)', cursor: 'pointer',
-              fontSize: '1.2rem', lineHeight: 1,
-            }}
+            className="flex items-center justify-center min-w-11 min-h-11 bg-transparent border-none text-(--color-text-muted) cursor-pointer text-[1.2rem] leading-none"
           >
             ×
           </button>
         </div>
 
-        <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* Scrollable body */}
+        <div className="overflow-y-auto p-5 flex flex-col gap-5">
           {result ? (
-            <p style={{ color: 'var(--color-gold)', fontStyle: 'italic', textAlign: 'center', padding: '1rem' }}>
-              {result}
-            </p>
+            <p className="text-(--color-gold) italic text-center py-4">{result}</p>
           ) : (
             <>
               {/* Duration */}
               <div>
-                <span style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.7rem',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: 'var(--color-text-faint)',
-                }}>
+                <span className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint)">
                   Duration
                 </span>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: '0.5rem',
-                  marginTop: '0.5rem',
-                }}>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                   {DURATION_OPTIONS.map((opt) => (
                     <button
                       key={opt.minutes}
                       onClick={() => setDuration(opt.minutes)}
-                      style={{
-                        padding: '0.65rem 0.25rem',
-                        border: `1px solid ${duration === opt.minutes ? 'var(--color-gold)' : 'var(--color-border-bright)'}`,
-                        borderRadius: '2px',
-                        background: duration === opt.minutes ? 'rgba(201,168,76,0.1)' : 'transparent',
-                        color: duration === opt.minutes ? 'var(--color-gold)' : 'var(--color-text-muted)',
-                        cursor: 'pointer',
-                        fontFamily: 'var(--font-display)',
-                        fontSize: '0.65rem',
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        transition: 'all 0.15s',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '0.2rem',
-                      }}
+                      className={`min-h-11 px-2 py-2 border rounded-xs cursor-pointer font-display text-[0.75rem] tracking-wider uppercase transition-all duration-150 flex flex-col items-center justify-center gap-1 ${
+                        duration === opt.minutes
+                          ? 'border-(--color-gold) bg-[rgba(201,168,76,0.1)] text-(--color-gold)'
+                          : 'border-(--color-border-bright) text-(--color-text-muted) bg-transparent'
+                      }`}
                     >
                       <span>{opt.label}</span>
-                      <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>{opt.xp}</span>
+                      <span className="text-[0.65rem] opacity-70">{opt.xp}</span>
                     </button>
                   ))}
                 </div>
@@ -131,13 +85,7 @@ export default function LogWorkoutModal({ onClose, onSuccess }: LogWorkoutModalP
 
               {/* Notes */}
               <div>
-                <span style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.7rem',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: 'var(--color-text-faint)',
-                }}>
+                <span className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint)">
                   Notes (optional)
                 </span>
                 <textarea
@@ -145,27 +93,11 @@ export default function LogWorkoutModal({ onClose, onSuccess }: LogWorkoutModalP
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="What did you do?"
                   rows={2}
-                  style={{
-                    width: '100%',
-                    marginTop: '0.5rem',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-bright)',
-                    borderRadius: '2px',
-                    color: 'var(--color-text)',
-                    padding: '0.6rem 0.75rem',
-                    fontSize: '1rem',
-                    fontFamily: 'var(--font-body)',
-                    resize: 'vertical',
-                    outline: 'none',
-                  }}
+                  className="w-full mt-2 bg-(--color-surface) border border-(--color-border-bright) rounded-xs text-(--color-text) px-3 py-[0.6rem] text-base font-body resize-y outline-none"
                 />
               </div>
 
-              <Button
-                onClick={handleSubmit}
-                loading={loading}
-                disabled={!duration}
-              >
+              <Button onClick={handleSubmit} loading={loading} disabled={!duration}>
                 Log Workout
               </Button>
             </>

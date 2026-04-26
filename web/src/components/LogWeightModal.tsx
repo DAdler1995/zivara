@@ -39,60 +39,29 @@ export default function LogWeightModal({ onClose, onSuccess }: LogWeightModalPro
   return (
     <div
       onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.75)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 200, padding: '1rem',
-      }}
+      className="fixed inset-0 bg-black/75 flex items-center justify-center z-200 p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '4px',
-          width: '100%',
-          maxWidth: '360px',
-          overflow: 'hidden',
-        }}
+        className="w-full max-w-90 bg-(--color-surface) border border-(--color-border) rounded-sm flex flex-col max-h-[calc(100vh-4rem)]"
       >
-        {/* Header */}
-        <div style={{
-          padding: '1rem 1.25rem',
-          borderBottom: '1px solid var(--color-border)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <h2 style={{ fontSize: '1rem', color: 'var(--color-gold)' }}>Log Weight</h2>
+        {/* Header — always visible */}
+        <div className="shrink-0 px-5 py-4 border-b border-(--color-border) flex justify-between items-center">
+          <h2 className="text-base">Log Weight</h2>
           <button
             onClick={onClose}
-            style={{
-              background: 'none', border: 'none',
-              color: 'var(--color-text-muted)', cursor: 'pointer',
-              fontSize: '1.2rem', lineHeight: 1,
-            }}
+            className="flex items-center justify-center min-w-11 min-h-11 bg-transparent border-none text-(--color-text-muted) cursor-pointer text-[1.2rem] leading-none"
           >
             ×
           </button>
         </div>
 
-        <div style={{ padding: '1.25rem' }}>
+        {/* Scrollable body */}
+        <div className="overflow-y-auto p-5">
           {result ? (
-            <p style={{
-              color: 'var(--color-gold)',
-              fontStyle: 'italic',
-              textAlign: 'center',
-              padding: '1rem',
-            }}>
-              {result}
-            </p>
+            <p className="text-(--color-gold) italic text-center py-4">{result}</p>
           ) : (
-            <form
-              onSubmit={handleSubmit}
-              style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
-            >
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <Input
                 label="Weight (lbs)"
                 type="number"
