@@ -37,30 +37,30 @@ export default function DashboardPage() {
     }
   }, [])
 
-useEffect(() => {
-  let cancelled = false
+  useEffect(() => {
+    let cancelled = false
 
-  async function load() {
-    try {
-      const [activityData, questsData, jarData] = await Promise.all([
-        getTodayActivity(),
-        getDailyQuests(),
-        getJarSummary(),
-      ])
-      if (cancelled) return
-      setActivity(activityData)
-      setQuests(questsData)
-      setJar(jarData)
-    } catch (err) {
-      console.error('Failed to load dashboard data', err)
-    } finally {
-      if (!cancelled) setLoading(false)
+    async function load() {
+      try {
+        const [activityData, questsData, jarData] = await Promise.all([
+          getTodayActivity(),
+          getDailyQuests(),
+          getJarSummary(),
+        ])
+        if (cancelled) return
+        setActivity(activityData)
+        setQuests(questsData)
+        setJar(jarData)
+      } catch (err) {
+        console.error('Failed to load dashboard data', err)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
-  }
 
-  load()
-  return () => { cancelled = true }
-}, [])
+    load()
+    return () => { cancelled = true }
+  }, [])
 
   async function handleCheckIn() {
     try {
@@ -88,7 +88,7 @@ useEffect(() => {
 
   if (loading) {
     return (
-      <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', paddingTop: '2rem' }}>
+      <div className="text-[var(--color-text-muted)] italic pt-8">
         The realm is loading...
       </div>
     )
@@ -97,98 +97,73 @@ useEffect(() => {
   const weekPercent = jar ? Math.round(jar.currentWeekUnlockedPercent * 100) : 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="flex flex-col gap-6">
 
       {/* Welcome header */}
       <div>
-        <h1 style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>
-          {character?.name}
-        </h1>
-        <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+        <h1 className="text-[1.75rem] mb-1">{character?.name}</h1>
+        <p className="text-[var(--color-text-muted)] italic">
           Total Level {character?.totalLevel} — {getGreeting()}
         </p>
       </div>
 
-      {/* Top row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+      {/* Top row: quests + right column */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Daily quests */}
-        <div style={cardStyle}>
+        <div className="card">
           <SectionHeader title="Daily Quests" />
           {quests?.quests.map((quest) => (
             <div
               key={quest.id}
-              style={{
-                padding: '0.75rem',
-                borderBottom: '1px solid var(--color-border)',
-                opacity: quest.status === 'Completed' ? 0.5 : 1,
-              }}
+              className={`p-3 border-b border-[var(--color-border)] ${quest.status === 'Completed' ? 'opacity-50' : ''}`}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '0.7rem',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: quest.status === 'Completed'
-                      ? 'var(--color-green-bright)'
-                      : 'var(--color-gold-dim)',
-                  }}
-                >
+              <div className="flex justify-between mb-[0.4rem]">
+                <span className={`font-display text-xs tracking-[0.1em] uppercase ${
+                  quest.status === 'Completed'
+                    ? 'text-[var(--color-green-bright)]'
+                    : 'text-[var(--color-gold-dim)]'
+                }`}>
                   {quest.skillTarget}
                   {quest.status === 'Completed' && ' — Complete'}
                 </span>
-                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
+                <span className="text-[var(--color-text-muted)] text-sm">
                   {quest.currentValue}/{quest.targetValue}
                 </span>
               </div>
-              <p style={{ color: 'var(--color-text)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+              <p className="text-[var(--color-text)] text-[0.95rem] leading-[1.5]">
                 {quest.description}
               </p>
-              {/* Progress bar */}
-              <div style={{
-                marginTop: '0.5rem',
-                height: '3px',
-                background: 'var(--color-border)',
-                borderRadius: '2px',
-                overflow: 'hidden',
-              }}>
-                <div style={{
-                  height: '100%',
-                  width: `${Math.min(100, (quest.currentValue / quest.targetValue) * 100)}%`,
-                  background: quest.status === 'Completed'
-                    ? 'var(--color-green-bright)'
-                    : 'var(--color-gold)',
-                  transition: 'width 0.3s ease',
-                }} />
+              <div className="mt-2 h-[3px] bg-[var(--color-border)] rounded-[2px] overflow-hidden">
+                <div
+                  className={`h-full transition-[width] duration-300 ${
+                    quest.status === 'Completed'
+                      ? 'bg-[var(--color-green-bright)]'
+                      : 'bg-[var(--color-gold)]'
+                  }`}
+                  style={{ width: `${Math.min(100, (quest.currentValue / quest.targetValue) * 100)}%` }}
+                />
               </div>
             </div>
           ))}
           {quests?.allCompleted && (
-            <p style={{
-              padding: '0.75rem',
-              color: 'var(--color-green-bright)',
-              fontStyle: 'italic',
-              fontSize: '0.9rem',
-              textAlign: 'center',
-            }}>
+            <p className="p-3 text-[var(--color-green-bright)] italic text-[0.9rem] text-center">
               All quests complete. Well done, adventurer.
             </p>
           )}
         </div>
 
-        {/* Right column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {/* Right column: hydration + reward jar */}
+        <div className="flex flex-col gap-6">
 
           {/* Water tracker */}
-          <div style={cardStyle}>
+          <div className="card">
             <SectionHeader title="Hydration" />
-            <div style={{ padding: '0.75rem' }}>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+            <div className="p-3">
+              <p className="text-[var(--color-text-muted)] text-sm mb-3">
                 {activity?.waterGlassesToday ?? 0} of 8 glasses today
               </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="flex gap-2">
                 {Array.from({ length: 8 }).map((_, i) => {
                   const filled = i < (activity?.waterGlassesToday ?? 0)
                   return (
@@ -196,19 +171,11 @@ useEffect(() => {
                       key={i}
                       onClick={() => handleWaterTap(i)}
                       title={filled ? 'Remove last glass' : 'Log a glass'}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '2px',
-                        border: `1px solid ${filled ? 'var(--color-gold)' : 'var(--color-border-bright)'}`,
-                        background: filled ? 'var(--color-gold)' : 'transparent',
-                        cursor: 'pointer',
-                        fontSize: '1.1rem',
-                        transition: 'all 0.15s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
+                      className={`flex-1 h-9 rounded-[2px] border cursor-pointer text-lg transition-all duration-150 flex items-center justify-center ${
+                        filled
+                          ? 'border-[var(--color-gold)] bg-[var(--color-gold)]'
+                          : 'border-[var(--color-border-bright)] bg-transparent hover:border-[var(--color-gold-dim)]'
+                      }`}
                     >
                       {filled ? '💧' : '○'}
                     </button>
@@ -219,45 +186,33 @@ useEffect(() => {
           </div>
 
           {/* Reward jar */}
-          <div style={cardStyle}>
+          <div className="card">
             <SectionHeader title="Reward Jar" />
-            <div style={{ padding: '0.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-                  Total unlocked
-                </span>
-                <span style={{
-                  fontFamily: 'var(--font-display)',
-                  color: 'var(--color-gold)',
-                  fontSize: '1.1rem',
-                }}>
+            <div className="p-3">
+              <div className="flex justify-between mb-2">
+                <span className="text-[var(--color-text-muted)] text-sm">Total unlocked</span>
+                <span className="font-display text-[var(--color-gold)] text-[1.1rem]">
                   ${jar?.totalUnlockedBalance.toFixed(2) ?? '0.00'}
                 </span>
               </div>
-              <div style={{ marginBottom: '0.4rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
-                    This week
-                  </span>
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
+              <div className="mb-[0.4rem]">
+                <div className="flex justify-between mb-[0.3rem]">
+                  <span className="text-[var(--color-text-muted)] text-sm">This week</span>
+                  <span className="text-[var(--color-text-muted)] text-sm">
                     {weekPercent}% — ${jar?.currentWeekUnlockedAmount.toFixed(2) ?? '0.00'} of ${jar?.currentWeekMaxEarn.toFixed(2) ?? '50.00'}
                   </span>
                 </div>
-                <div style={{
-                  height: '6px',
-                  background: 'var(--color-border)',
-                  borderRadius: '3px',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${weekPercent}%`,
-                    background: 'linear-gradient(90deg, var(--color-gold-dim), var(--color-gold))',
-                    transition: 'width 0.3s ease',
-                  }} />
+                <div className="h-[6px] bg-[var(--color-border)] rounded-[3px] overflow-hidden">
+                  <div
+                    className="h-full transition-[width] duration-300"
+                    style={{
+                      width: `${weekPercent}%`,
+                      background: 'linear-gradient(90deg, var(--color-gold-dim), var(--color-gold))',
+                    }}
+                  />
                 </div>
               </div>
-              <p style={{ color: 'var(--color-text-faint)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+              <p className="text-[var(--color-text-faint)] text-sm italic">
                 {jar?.dailyQuestDaysCompletedThisWeek ?? 0}/7 quest days this week
               </p>
             </div>
@@ -266,14 +221,9 @@ useEffect(() => {
       </div>
 
       {/* Action buttons */}
-      <div style={cardStyle}>
+      <div className="card">
         <SectionHeader title="Log Activity" />
-        <div style={{
-          padding: '0.75rem',
-          display: 'flex',
-          gap: '0.75rem',
-          flexWrap: 'wrap',
-        }}>
+        <div className="p-3 flex flex-col md:flex-row gap-3">
           <ActionButton
             label="Check In"
             done={activity?.checkedInToday}
@@ -295,14 +245,9 @@ useEffect(() => {
       </div>
 
       {/* Today's summary */}
-      <div style={cardStyle}>
+      <div className="card">
         <SectionHeader title="Today" />
-        <div style={{
-          padding: '0.75rem',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '1rem',
-        }}>
+        <div className="p-3 grid grid-cols-3 gap-4">
           <Stat label="Steps" value={activity?.stepsToday.toLocaleString() ?? '0'} />
           <Stat label="Meals Logged" value={String(activity?.mealsLoggedToday ?? 0)} />
           <Stat
@@ -336,30 +281,11 @@ useEffect(() => {
   )
 }
 
-// Helper components
-
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div style={{
-      padding: '0.6rem 0.75rem',
-      borderBottom: '1px solid var(--color-border)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-    }}>
-      <div style={{
-        width: '3px',
-        height: '14px',
-        background: 'var(--color-gold)',
-        borderRadius: '1px',
-      }} />
-      <span style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: '0.7rem',
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
-        color: 'var(--color-text-muted)',
-      }}>
+    <div className="px-3 py-[0.6rem] border-b border-[var(--color-border)] flex items-center gap-2">
+      <div className="w-[3px] h-[14px] bg-[var(--color-gold)] rounded-[1px] shrink-0" />
+      <span className="font-display text-xs tracking-[0.12em] uppercase text-[var(--color-text-muted)] font-semibold">
         {title}
       </span>
     </div>
@@ -378,31 +304,11 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
-      style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: '0.7rem',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-        padding: '0.5rem 1rem',
-        border: `1px solid ${done ? 'var(--color-green-bright)' : 'var(--color-border-bright)'}`,
-        borderRadius: '2px',
-        background: done ? 'rgba(42, 92, 42, 0.3)' : 'transparent',
-        color: done ? 'var(--color-green-bright)' : 'var(--color-text-muted)',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-      }}
-      onMouseEnter={(e) => {
-        if (!done) {
-          e.currentTarget.style.borderColor = 'var(--color-gold-dim)'
-          e.currentTarget.style.color = 'var(--color-text)'
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!done) {
-          e.currentTarget.style.borderColor = 'var(--color-border-bright)'
-          e.currentTarget.style.color = 'var(--color-text-muted)'
-        }
-      }}
+      className={`font-display text-xs tracking-[0.1em] uppercase min-h-[44px] px-4 w-full md:w-auto border rounded-[2px] cursor-pointer transition-all duration-150 ${
+        done
+          ? 'border-[var(--color-green-bright)] bg-[rgba(42,92,42,0.3)] text-[var(--color-green-bright)]'
+          : 'border-[var(--color-border-bright)] bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-gold-dim)] hover:text-[var(--color-text)]'
+      }`}
     >
       {done ? `✓ ${label}` : label}
     </button>
@@ -420,32 +326,14 @@ function Stat({
 }) {
   return (
     <div>
-      <p style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: '0.65rem',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-        color: 'var(--color-text-faint)',
-        marginBottom: '0.25rem',
-      }}>
+      <p className="font-display text-[0.75rem] tracking-[0.1em] uppercase text-[var(--color-text-faint)] mb-1">
         {label}
       </p>
-      <p style={{
-        fontSize: '1.25rem',
-        color: highlight ? 'var(--color-green-bright)' : 'var(--color-text)',
-        fontFamily: 'var(--font-display)',
-      }}>
+      <p className={`text-[1.25rem] font-display ${highlight ? 'text-[var(--color-green-bright)]' : 'text-[var(--color-text)]'}`}>
         {value}
       </p>
     </div>
   )
-}
-
-const cardStyle: React.CSSProperties = {
-  background: 'var(--color-surface)',
-  border: '1px solid var(--color-border)',
-  borderRadius: '4px',
-  overflow: 'hidden',
 }
 
 function getGreeting() {

@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@theme {
+  --font-display: 'Cinzel', serif;
+  --font-body: 'Crimson Pro', serif;
+}
+
 :root {
   --color-bg: #0d0d0d;
   --color-surface: #141414;
@@ -10,38 +15,61 @@
   --color-gold-bright: #e2c06a;
   --color-gold-dim: #7a6230;
   --color-text: #e8e0d0;
-  --color-text-muted: #8a8070;
+  --color-text-muted: #b8a98a;
   --color-text-faint: #4a4540;
   --color-red: #8b2020;
   --color-red-bright: #c43030;
   --color-green: #2a5c2a;
   --color-green-bright: #4a9c4a;
-  --font-display: 'Cinzel', serif;
-  --font-body: 'Crimson Pro', serif;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--color-gold);
+  }
+
+  input, button, textarea, select {
+    font-family: var(--font-body);
+  }
 }
 
-body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-body);
-  font-size: 18px;
-  line-height: 1.6;
-  min-height: 100vh;
-}
+@layer components {
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
 
-h1, h2, h3, h4 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: var(--color-gold);
-}
+  .mobile-bottom-nav {
+    display: none;
+  }
 
-input, button, textarea, select {
-  font-family: var(--font-body);
+  @media (max-width: 767px) {
+    .mobile-bottom-nav {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+  }
 }
