@@ -71,85 +71,34 @@ export default function CharacterPage() {
 
   if (!character) {
     return (
-      <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-        Loading character...
-      </div>
+      <div className="text-(--color-text-muted) italic pt-8">Loading character...</div>
     )
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="flex flex-col gap-6">
 
       {/* Character header */}
-      <div style={{
-        background: 'var(--color-surface)',
-        border: '1px solid var(--color-border)',
-        borderRadius: '4px',
-        padding: '1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
+      <div className="card p-6 flex items-center justify-between">
         <div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>
-            {character.name}
-          </h1>
-          <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+          <h1 className="text-[2rem] mb-1">{character.name}</h1>
+          <p className="text-(--color-text-muted) italic">
             {character.titleEquipped ?? 'Adventurer'}
           </p>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <p style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '0.7rem',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: 'var(--color-text-faint)',
-            marginBottom: '0.25rem',
-          }}>
+        <div className="text-right">
+          <p className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint) mb-1">
             Total Level
           </p>
-          <p style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '3rem',
-            color: 'var(--color-gold)',
-            lineHeight: 1,
-          }}>
+          <p className="font-display text-[3rem] text-(--color-gold) leading-none">
             {character.totalLevel}
           </p>
         </div>
       </div>
 
       {/* Skills */}
-      <div style={{
-        background: 'var(--color-surface)',
-        border: '1px solid var(--color-border)',
-        borderRadius: '4px',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          padding: '0.6rem 0.75rem',
-          borderBottom: '1px solid var(--color-border)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-        }}>
-          <div style={{
-            width: '3px', height: '14px',
-            background: 'var(--color-gold)',
-            borderRadius: '1px',
-          }} />
-          <span style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '0.7rem',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'var(--color-text-muted)',
-          }}>
-            Skills
-          </span>
-        </div>
-
+      <div className="card">
+        <SectionHeader title="Skills" />
         {character.skills.map((skill) => {
           const color = SKILL_COLORS[skill.skillType] ?? 'var(--color-gold)'
           const desc = SKILL_DESCRIPTIONS[skill.skillType]
@@ -159,49 +108,22 @@ export default function CharacterPage() {
             : Math.round((skill.xpIntoCurrentLevel / (skill.xpIntoCurrentLevel + skill.xpToNextLevel)) * 100)
 
           return (
-            <div
-              key={skill.skillType}
-              style={{ borderBottom: '1px solid var(--color-border)' }}
-            >
+            <div key={skill.skillType} className="border-b border-(--color-border)">
               <div
                 onClick={() => setExpandedSkill(isExpanded ? null : skill.skillType)}
-                style={{
-                  padding: '0.75rem 1rem',
-                  cursor: 'pointer',
-                  display: 'grid',
-                  gridTemplateColumns: '140px 1fr 80px',
-                  alignItems: 'center',
-                  gap: '1rem',
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = 'var(--color-surface-raised)')
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = 'transparent')
-                }
+                className="grid grid-cols-[140px_1fr_80px] gap-4 items-center min-h-11 px-4 py-3 cursor-pointer hover:bg-(--color-surface-raised) transition-colors duration-150"
               >
                 {/* Skill name and level */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{
-                    width: '8px', height: '8px',
-                    borderRadius: '50%',
-                    background: color,
-                    flexShrink: 0,
-                  }} />
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ background: color }}
+                  />
                   <div>
-                    <p style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '0.8rem',
-                      letterSpacing: '0.05em',
-                      color: 'var(--color-text)',
-                    }}>
+                    <p className="font-display text-[0.8rem] tracking-wider text-(--color-text)">
                       {skill.skillType}
                     </p>
-                    <p style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--color-text-muted)',
-                    }}>
+                    <p className="text-[0.75rem] text-(--color-text-muted)">
                       Level {skill.level}
                     </p>
                   </div>
@@ -209,25 +131,13 @@ export default function CharacterPage() {
 
                 {/* XP progress bar */}
                 <div>
-                  <div style={{
-                    height: '6px',
-                    background: 'var(--color-border)',
-                    borderRadius: '3px',
-                    overflow: 'hidden',
-                    marginBottom: '0.3rem',
-                  }}>
-                    <div style={{
-                      height: '100%',
-                      width: `${progressPercent}%`,
-                      background: color,
-                      borderRadius: '3px',
-                      transition: 'width 0.3s ease',
-                    }} />
+                  <div className="h-1.5 bg-(--color-border) rounded-[3px] overflow-hidden mb-[0.3rem]">
+                    <div
+                      className="h-full rounded-[3px] transition-[width] duration-300"
+                      style={{ width: `${progressPercent}%`, background: color }}
+                    />
                   </div>
-                  <p style={{
-                    fontSize: '0.7rem',
-                    color: 'var(--color-text-faint)',
-                  }}>
+                  <p className="text-[0.75rem] text-(--color-text-faint)">
                     {skill.xpIntoCurrentLevel.toLocaleString()} /
                     {skill.level < 99
                       ? ` ${(skill.xpIntoCurrentLevel + skill.xpToNextLevel).toLocaleString()} XP`
@@ -236,69 +146,28 @@ export default function CharacterPage() {
                 </div>
 
                 {/* Total XP */}
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '0.7rem',
-                    color: 'var(--color-text-faint)',
-                    letterSpacing: '0.05em',
-                  }}>
+                <div className="text-right">
+                  <p className="font-display text-[0.75rem] text-(--color-text-faint) tracking-wider">
                     {skill.totalXP.toLocaleString()}
                   </p>
-                  <p style={{
-                    fontSize: '0.65rem',
-                    color: 'var(--color-text-faint)',
-                  }}>
-                    total xp
-                  </p>
+                  <p className="text-[0.65rem] text-(--color-text-faint)">total xp</p>
                 </div>
               </div>
 
               {/* Expanded skill detail */}
               {isExpanded && desc && (
-                <div style={{
-                  padding: '0.75rem 1rem 1rem 2.5rem',
-                  background: 'var(--color-surface-raised)',
-                  borderTop: '1px solid var(--color-border)',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '1rem',
-                }}>
+                <div className="pl-10 pr-4 pt-3 pb-4 bg-(--color-surface-raised) border-t border-(--color-border) grid grid-cols-2 gap-4">
                   <div>
-                    <p style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '0.65rem',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
-                      color: 'var(--color-text-faint)',
-                      marginBottom: '0.3rem',
-                    }}>
+                    <p className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint) mb-[0.3rem]">
                       Combat Role
                     </p>
-                    <p style={{
-                      color: 'var(--color-text-muted)',
-                      fontSize: '0.9rem',
-                    }}>
-                      {desc.role}
-                    </p>
+                    <p className="text-[0.9rem] text-(--color-text-muted)">{desc.role}</p>
                   </div>
                   <div>
-                    <p style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '0.65rem',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
-                      color: 'var(--color-text-faint)',
-                      marginBottom: '0.3rem',
-                    }}>
+                    <p className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint) mb-[0.3rem]">
                       How to Train
                     </p>
-                    <p style={{
-                      color: 'var(--color-text-muted)',
-                      fontSize: '0.9rem',
-                    }}>
-                      {desc.trains}
-                    </p>
+                    <p className="text-[0.9rem] text-(--color-text-muted)">{desc.trains}</p>
                   </div>
                 </div>
               )}
@@ -308,71 +177,24 @@ export default function CharacterPage() {
       </div>
 
       {/* Event log */}
-      <div style={{
-        background: 'var(--color-surface)',
-        border: '1px solid var(--color-border)',
-        borderRadius: '4px',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          padding: '0.6rem 0.75rem',
-          borderBottom: '1px solid var(--color-border)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-        }}>
-          <div style={{
-            width: '3px', height: '14px',
-            background: 'var(--color-gold)',
-            borderRadius: '1px',
-          }} />
-          <span style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '0.7rem',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'var(--color-text-muted)',
-          }}>
-            Event Log
-          </span>
-        </div>
+      <div className="card">
+        <SectionHeader title="Event Log" />
 
         {loadingEvents ? (
-          <p style={{
-            padding: '1rem',
-            color: 'var(--color-text-muted)',
-            fontStyle: 'italic',
-            fontSize: '0.9rem',
-          }}>
-            Loading events...
-          </p>
+          <p className="p-4 text-(--color-text-muted) italic text-[0.9rem]">Loading events...</p>
         ) : events.length === 0 ? (
-          <p style={{
-            padding: '1rem',
-            color: 'var(--color-text-muted)',
-            fontStyle: 'italic',
-            fontSize: '0.9rem',
-          }}>
+          <p className="p-4 text-(--color-text-muted) italic text-[0.9rem]">
             No events yet. Start logging activity to see your history here.
           </p>
         ) : (
           <>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="w-full border-collapse">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <tr className="border-b border-(--color-border)">
                   {['Time', 'Skill', 'Source', 'XP'].map((col) => (
                     <th
                       key={col}
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        textAlign: col === 'XP' ? 'right' : 'left',
-                        fontFamily: 'var(--font-display)',
-                        fontSize: '0.65rem',
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                        color: 'var(--color-text-faint)',
-                        fontWeight: 400,
-                      }}
+                      className={`px-3 py-2 font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint) font-normal ${col === 'XP' ? 'text-right' : 'text-left'}`}
                     >
                       {col}
                     </th>
@@ -384,51 +206,23 @@ export default function CharacterPage() {
                   const color = SKILL_COLORS[event.skillType] ?? 'var(--color-text-muted)'
                   const isNegative = event.xpAmount < 0
                   return (
-                    <tr
-                      key={event.id}
-                      style={{ borderBottom: '1px solid var(--color-border)' }}
-                    >
-                      <td style={{
-                        padding: '0.5rem 0.75rem',
-                        fontSize: '0.8rem',
-                        color: 'var(--color-text-faint)',
-                        whiteSpace: 'nowrap',
-                      }}>
+                    <tr key={event.id} className="border-b border-(--color-border)">
+                      <td className="px-3 py-2 text-[0.8rem] text-(--color-text-faint) whitespace-nowrap">
                         {formatDateTime(event.awardedAt)}
                       </td>
-                      <td style={{ padding: '0.5rem 0.75rem' }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                          fontSize: '0.85rem',
-                          color: 'var(--color-text)',
-                        }}>
-                          <span style={{
-                            width: '6px', height: '6px',
-                            borderRadius: '50%',
-                            background: color,
-                            flexShrink: 0,
-                          }} />
+                      <td className="px-3 py-2">
+                        <span className="inline-flex items-center gap-[0.4rem] text-[0.85rem] text-(--color-text)">
+                          <span
+                            className="w-[6px] h-[6px] rounded-full shrink-0"
+                            style={{ background: color }}
+                          />
                           {event.skillType}
                         </span>
                       </td>
-                      <td style={{
-                        padding: '0.5rem 0.75rem',
-                        fontSize: '0.85rem',
-                        color: 'var(--color-text-muted)',
-                      }}>
+                      <td className="px-3 py-2 text-[0.85rem] text-(--color-text-muted)">
                         {SOURCE_LABELS[event.source] ?? event.source}
                       </td>
-                      <td style={{
-                        padding: '0.5rem 0.75rem',
-                        textAlign: 'right',
-                        fontFamily: 'var(--font-display)',
-                        fontSize: '0.85rem',
-                        color: isNegative
-                          ? 'var(--color-red-bright)'
-                          : 'var(--color-gold)',
-                      }}>
+                      <td className={`px-3 py-2 text-right font-display text-[0.85rem] ${isNegative ? 'text-(--color-red-bright)' : 'text-(--color-gold)'}`}>
                         {isNegative ? '' : '+'}{event.xpAmount}
                       </td>
                     </tr>
@@ -438,30 +232,10 @@ export default function CharacterPage() {
             </table>
 
             {hasMore && (
-              <div style={{ padding: '0.75rem', textAlign: 'center' }}>
+              <div className="p-3 text-center">
                 <button
                   onClick={loadMore}
-                  style={{
-                    background: 'none',
-                    border: '1px solid var(--color-border-bright)',
-                    borderRadius: '2px',
-                    color: 'var(--color-text-muted)',
-                    padding: '0.4rem 1rem',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '0.7rem',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--color-gold-dim)'
-                    e.currentTarget.style.color = 'var(--color-text)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--color-border-bright)'
-                    e.currentTarget.style.color = 'var(--color-text-muted)'
-                  }}
+                  className="bg-transparent border border-(--color-border-bright) rounded-xs text-(--color-text-muted) px-4 py-[0.4rem] cursor-pointer font-display text-[0.75rem] tracking-widest uppercase transition-all duration-150 hover:border-(--color-gold-dim) hover:text-(--color-text)"
                 >
                   Load More
                 </button>
@@ -470,6 +244,17 @@ export default function CharacterPage() {
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="px-3 py-[0.6rem] border-b border-(--color-border) flex items-center gap-2">
+      <div className="w-[3px] h-[14px] bg-(--color-gold) rounded-[1px] shrink-0" />
+      <span className="font-display text-[0.75rem] tracking-[0.12em] uppercase text-(--color-text-muted) font-semibold">
+        {title}
+      </span>
     </div>
   )
 }
