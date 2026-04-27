@@ -4,6 +4,7 @@ import type {
   LogWorkoutRequest,
   LogWeightRequest,
   LogWaterRequest,
+  SyncStepsRequest,
 } from '@zivara/shared'
 
 export interface ActivityResponse {
@@ -61,4 +62,35 @@ export async function checkIn(): Promise<ActivityResponse> {
 export async function getTodayActivity(): Promise<TodayActivityResponse> {
   const response = await client.get<TodayActivityResponse>('/activity/today')
   return response.data
+}
+
+export async function syncSteps(stepCount: number): Promise<ActivityResponse> {
+  const today = new Date().toISOString().slice(0, 10)
+  const request: SyncStepsRequest = { date: today, stepCount }
+  const response = await client.post<ActivityResponse>('/steps/sync', request)
+  return response.data
+}
+
+export interface GoogleFitStatusResponse {
+  isConnected: boolean
+  lastSyncedAt: string | null
+}
+
+export async function getGoogleFitStatus(): Promise<GoogleFitStatusResponse> {
+  const response = await client.get<GoogleFitStatusResponse>('/steps/google/status')
+  return response.data
+}
+
+export async function getGoogleFitAuthUrl(): Promise<{ authUrl: string }> {
+  const response = await client.get<{ authUrl: string }>('/steps/google/auth-url')
+  return response.data
+}
+
+export async function triggerGoogleFitSync(): Promise<ActivityResponse> {
+  const response = await client.post<ActivityResponse>('/steps/google/sync')
+  return response.data
+}
+
+export async function disconnectGoogleFit(): Promise<void> {
+  await client.delete('/steps/google/disconnect')
 }

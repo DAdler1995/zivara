@@ -4,8 +4,10 @@ import { checkNameAvailability, updateCharacterName } from '../api/character'
 import { useAuth } from '../context/useAuth'
 import Input from '../components/Input'
 import Button from '../components/Button'
+import { usePageTitle } from '../context/usePageTitle'
 
 export default function CreateCharacterPage() {
+  usePageTitle('Begin Your Journey')
   const [name, setName] = useState('')
   const [available, setAvailable] = useState<boolean | null>(null)
   const [checking, setChecking] = useState(false)
@@ -14,27 +16,26 @@ export default function CreateCharacterPage() {
   const { refreshCharacter } = useAuth()
   const navigate = useNavigate()
 
-// Check name availability as the player types
-useEffect(() => {
-  const timeout = setTimeout(async () => {
-    if (name.length < 2) {
-      setAvailable(null)
-      setChecking(false)
-      return
-    }
-    setChecking(true)
-    try {
-      const result = await checkNameAvailability(name)
-      setAvailable(result)
-    } catch {
-      setAvailable(null)
-    } finally {
-      setChecking(false)
-    }
-  }, 400)
+  useEffect(() => {
+    const timeout = setTimeout(async () => {
+      if (name.length < 2) {
+        setAvailable(null)
+        setChecking(false)
+        return
+      }
+      setChecking(true)
+      try {
+        const result = await checkNameAvailability(name)
+        setAvailable(result)
+      } catch {
+        setAvailable(null)
+      } finally {
+        setChecking(false)
+      }
+    }, 400)
 
-  return () => clearTimeout(timeout)
-}, [name])
+    return () => clearTimeout(timeout)
+  }, [name])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -65,100 +66,34 @@ useEffect(() => {
   const nameStatus = getNameStatus()
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--color-bg)',
-        padding: '2rem',
-      }}
-    >
+    <div className="min-h-screen flex items-center justify-center bg-(--color-bg) p-8">
       <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundImage: `radial-gradient(ellipse at 50% 0%, #1a1408 0%, transparent 70%)`,
-          pointerEvents: 'none',
-        }}
+        className="fixed inset-0 pointer-events-none"
+        style={{ backgroundImage: 'radial-gradient(ellipse at 50% 0%, #1a1408 0%, transparent 70%)' }}
       />
 
-      <div style={{ width: '100%', maxWidth: '480px', position: 'relative' }}>
-        {/* Lore header */}
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <h1
-            style={{
-              fontSize: '2.25rem',
-              letterSpacing: '0.15em',
-              color: 'var(--color-gold)',
-              marginBottom: '1.5rem',
-            }}
-          >
-            Enter Zivara
-          </h1>
-          <div
-            style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderLeft: '3px solid var(--color-gold-dim)',
-              padding: '1.25rem 1.5rem',
-              textAlign: 'left',
-              borderRadius: '2px',
-            }}
-          >
-            <p
-              style={{
-                color: 'var(--color-text-muted)',
-                fontStyle: 'italic',
-                lineHeight: 1.7,
-                fontSize: '1rem',
-              }}
-            >
+      <div className="w-full max-w-120 relative">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl tracking-[0.15em] mb-6">Enter Zivara</h1>
+          <div className="bg-(--color-surface) border border-(--color-border) border-l-[3px] border-l-(--color-gold-dim) px-6 py-5 text-left rounded-xs">
+            <p className="text-(--color-text-muted) italic leading-[1.7] text-base">
               The world does not know your name yet. It will remember whatever you give it.
               Choose carefully. This is who you are in Zivara.
             </p>
           </div>
         </div>
 
-        {/* Name form */}
-        <div
-          style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '4px',
-            padding: '2rem',
-          }}
-        >
+        <div className="bg-(--color-surface) border border-(--color-border) rounded-sm p-8">
           <div
-            style={{
-              height: '2px',
-              background: 'linear-gradient(90deg, transparent, var(--color-gold), transparent)',
-              marginBottom: '1.75rem',
-              marginTop: '-2rem',
-              marginLeft: '-2rem',
-              marginRight: '-2rem',
-            }}
+            className="h-0.5 -mt-8 -mx-8 mb-7"
+            style={{ background: 'linear-gradient(90deg, transparent, var(--color-gold), transparent)' }}
           />
 
-          <h2
-            style={{
-              fontSize: '1rem',
-              marginBottom: '1.5rem',
-              color: 'var(--color-text-muted)',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 400,
-              letterSpacing: '0.1em',
-              textAlign: 'center',
-            }}
-          >
+          <h2 className="text-base mb-6 text-(--color-text-muted) font-normal tracking-widest text-center">
             Choose Your Name
           </h2>
 
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
-          >
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
               <Input
                 label="Character Name"
@@ -169,64 +104,36 @@ useEffect(() => {
                 autoFocus
                 required
               />
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginTop: '0.4rem',
-                }}
-              >
+              <div className="flex justify-between mt-[0.4rem]">
                 {nameStatus ? (
-                  <span style={{ color: nameStatus.color, fontSize: '0.85rem' }}>
+                  <span className="text-[0.85rem]" style={{ color: nameStatus.color }}>
                     {nameStatus.text}
                   </span>
                 ) : (
                   <span />
                 )}
-                <span
-                  style={{
-                    color: 'var(--color-text-faint)',
-                    fontSize: '0.85rem',
-                  }}
-                >
+                <span className="text-(--color-text-faint) text-[0.85rem]">
                   {name.length}/20
                 </span>
               </div>
             </div>
 
             {error && (
-              <p
-                style={{
-                  color: 'var(--color-red-bright)',
-                  fontSize: '0.9rem',
-                  textAlign: 'center',
-                }}
-              >
-                {error}
-              </p>
+              <p className="text-(--color-red-bright) text-[0.9rem] text-center">{error}</p>
             )}
 
             <Button
               type="submit"
               loading={loading}
               disabled={!available || name.length < 2}
-              style={{ marginTop: '0.5rem' }}
+              className="mt-2"
             >
               Enter the World
             </Button>
           </form>
         </div>
 
-        {/* Fine print */}
-        <p
-          style={{
-            textAlign: 'center',
-            marginTop: '1.25rem',
-            color: 'var(--color-text-faint)',
-            fontSize: '0.85rem',
-            fontStyle: 'italic',
-          }}
-        >
+        <p className="text-center mt-5 text-(--color-text-faint) text-[0.85rem] italic">
           Names can be changed once every 30 days.
         </p>
       </div>

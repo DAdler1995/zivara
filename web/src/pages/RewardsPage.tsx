@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { getJarSummary, getWishList, createWishListItem, deleteWishListItem } from '../api/rewards'
 import type { JarSummaryResponse, WishListItemDto } from '../api/rewards'
+import { usePageTitle } from '../context/usePageTitle'
 
 export default function RewardsPage() {
+  usePageTitle('Rewards')
   const [jar, setJar] = useState<JarSummaryResponse | null>(null)
   const [wishList, setWishList] = useState<WishListItemDto[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,71 +64,37 @@ export default function RewardsPage() {
 
   if (loading) {
     return (
-      <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-        Loading rewards...
-      </div>
+      <div className="text-(--color-text-muted) italic pt-8">Loading rewards...</div>
     )
   }
 
   const weekPercent = jar ? Math.round(jar.currentWeekUnlockedPercent * 100) : 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="flex flex-col gap-6">
 
-      <h1 style={{ fontSize: '1.75rem' }}>Rewards</h1>
+      <h1 className="text-[1.75rem]">Rewards</h1>
 
       {/* Jar summary */}
-      <div style={cardStyle}>
+      <div className="card">
         <SectionHeader title="Reward Jar" />
-        <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div className="p-5 flex flex-col gap-5">
 
           {/* Total balance */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '1rem',
-            background: 'var(--color-surface-raised)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '2px',
-          }}>
+          <div className="flex items-center justify-between p-4 bg-(--color-surface-raised) border border-(--color-border) rounded-xs">
             <div>
-              <p style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.65rem',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: 'var(--color-text-faint)',
-                marginBottom: '0.25rem',
-              }}>
+              <p className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint) mb-1">
                 Total Unlocked
               </p>
-              <p style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '2.5rem',
-                color: 'var(--color-gold)',
-                lineHeight: 1,
-              }}>
+              <p className="font-display text-[2.5rem] text-(--color-gold) leading-none">
                 ${jar?.totalUnlockedBalance.toFixed(2) ?? '0.00'}
               </p>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.65rem',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: 'var(--color-text-faint)',
-                marginBottom: '0.25rem',
-              }}>
+            <div className="text-right">
+              <p className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint) mb-1">
                 Weekly Max
               </p>
-              <p style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.5rem',
-                color: 'var(--color-text-muted)',
-                lineHeight: 1,
-              }}>
+              <p className="font-display text-[1.5rem] text-(--color-text-muted) leading-none">
                 ${jar?.currentWeekMaxEarn.toFixed(2) ?? '50.00'}
               </p>
             </div>
@@ -134,50 +102,27 @@ export default function RewardsPage() {
 
           {/* This week progress */}
           <div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: '0.5rem',
-            }}>
-              <span style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.65rem',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: 'var(--color-text-faint)',
-              }}>
+            <div className="flex justify-between mb-2">
+              <span className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint)">
                 This Week
               </span>
-              <span style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.75rem',
-                color: 'var(--color-gold)',
-              }}>
+              <span className="font-display text-[0.75rem] text-(--color-gold)">
                 {weekPercent}% — ${jar?.currentWeekUnlockedAmount.toFixed(2) ?? '0.00'}
               </span>
             </div>
-            <div style={{
-              height: '8px',
-              background: 'var(--color-border)',
-              borderRadius: '4px',
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                height: '100%',
-                width: `${weekPercent}%`,
-                background: 'linear-gradient(90deg, var(--color-gold-dim), var(--color-gold))',
-                borderRadius: '4px',
-                transition: 'width 0.3s ease',
-              }} />
+            <div className="h-2 bg-(--color-border) rounded-[4px] overflow-hidden">
+              <div
+                className="h-full rounded-[4px] transition-[width] duration-300"
+                style={{
+                  width: `${weekPercent}%`,
+                  background: 'linear-gradient(90deg, var(--color-gold-dim), var(--color-gold))',
+                }}
+              />
             </div>
           </div>
 
           {/* Weekly breakdown */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '0.75rem',
-          }}>
+          <div className="grid grid-cols-3 gap-3">
             <WeekStat
               label="Quest Days"
               value={`${jar?.dailyQuestDaysCompletedThisWeek ?? 0}/7`}
@@ -201,53 +146,18 @@ export default function RewardsPage() {
       </div>
 
       {/* Wish list */}
-      <div style={cardStyle}>
-        <div style={{
-          padding: '0.6rem 0.75rem',
-          borderBottom: '1px solid var(--color-border)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{
-              width: '3px', height: '14px',
-              background: 'var(--color-gold)',
-              borderRadius: '1px',
-            }} />
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.7rem',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--color-text-muted)',
-            }}>
+      <div className="card">
+        {/* Wish list header */}
+        <div className="px-3 py-[0.6rem] border-b border-(--color-border) flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-[3px] h-[14px] bg-(--color-gold) rounded-[1px] shrink-0" />
+            <span className="font-display text-[0.75rem] tracking-[0.12em] uppercase text-(--color-text-muted) font-semibold">
               Wish List
             </span>
           </div>
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            style={{
-              background: 'none',
-              border: '1px solid var(--color-border-bright)',
-              borderRadius: '2px',
-              color: 'var(--color-text-muted)',
-              padding: '0.25rem 0.6rem',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.65rem',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--color-gold-dim)'
-              e.currentTarget.style.color = 'var(--color-text)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--color-border-bright)'
-              e.currentTarget.style.color = 'var(--color-text-muted)'
-            }}
+            className="bg-transparent border border-(--color-border-bright) rounded-xs text-(--color-text-muted) px-[0.6rem] py-1 cursor-pointer font-display text-[0.75rem] tracking-widest uppercase transition-all duration-150 hover:border-(--color-gold-dim) hover:text-(--color-text)"
           >
             {showAddForm ? 'Cancel' : '+ Add Item'}
           </button>
@@ -255,22 +165,15 @@ export default function RewardsPage() {
 
         {/* Add form */}
         {showAddForm && (
-          <div style={{
-            padding: '1rem 1.25rem',
-            borderBottom: '1px solid var(--color-border)',
-            background: 'var(--color-surface-raised)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
-          }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.75rem', alignItems: 'end' }}>
+          <div className="px-5 py-4 border-b border-(--color-border) bg-(--color-surface-raised) flex flex-col gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 items-end">
               <div>
                 <FieldLabel text="Item" />
                 <input
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
                   placeholder="e.g. New gaming headset"
-                  style={inputStyle}
+                  className="w-full bg-(--color-surface) border border-(--color-border-bright) rounded-xs text-(--color-text) px-3 py-[0.55rem] text-[0.95rem] font-body outline-none"
                 />
               </div>
               <div>
@@ -280,25 +183,13 @@ export default function RewardsPage() {
                   value={newCost}
                   onChange={(e) => setNewCost(e.target.value)}
                   placeholder="150"
-                  style={{ ...inputStyle, width: '100px' }}
+                  className="w-full md:w-[100px] bg-(--color-surface) border border-(--color-border-bright) rounded-xs text-(--color-text) px-3 py-[0.55rem] text-[0.95rem] font-body outline-none"
                 />
               </div>
               <button
                 onClick={handleAddItem}
                 disabled={!newLabel.trim() || adding}
-                style={{
-                  padding: '0.55rem 1rem',
-                  border: '1px solid var(--color-gold)',
-                  borderRadius: '2px',
-                  background: 'var(--color-gold)',
-                  color: '#0d0d0d',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.65rem',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  opacity: !newLabel.trim() || adding ? 0.5 : 1,
-                }}
+                className="min-h-[38px] px-4 border border-(--color-gold) rounded-xs bg-(--color-gold) text-(--color-bg) cursor-pointer font-display text-[0.75rem] tracking-widest uppercase transition-opacity duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {adding ? '...' : 'Add'}
               </button>
@@ -309,7 +200,7 @@ export default function RewardsPage() {
                 value={newTrigger}
                 onChange={(e) => setNewTrigger(e.target.value)}
                 placeholder="e.g. TotalLevel150"
-                style={inputStyle}
+                className="w-full bg-(--color-surface) border border-(--color-border-bright) rounded-xs text-(--color-text) px-3 py-[0.55rem] text-[0.95rem] font-body outline-none"
               />
             </div>
           </div>
@@ -317,81 +208,39 @@ export default function RewardsPage() {
 
         {/* Wish list items */}
         {wishList.length === 0 ? (
-          <p style={{
-            padding: '1rem',
-            color: 'var(--color-text-muted)',
-            fontStyle: 'italic',
-            fontSize: '0.9rem',
-          }}>
+          <p className="p-4 text-(--color-text-muted) italic text-[0.9rem]">
             No items yet. Add something to work toward.
           </p>
         ) : (
           wishList.map((item) => (
             <div
               key={item.id}
-              style={{
-                padding: '0.75rem 1rem',
-                borderBottom: '1px solid var(--color-border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                opacity: item.isUnlocked ? 0.6 : 1,
-              }}
+              className={`px-4 py-3 border-b border-(--color-border) flex items-center justify-between ${item.isUnlocked ? 'opacity-60' : ''}`}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{
-                  fontSize: '1rem',
-                  color: item.isUnlocked ? 'var(--color-green-bright)' : 'var(--color-text-faint)',
-                }}>
+              <div className="flex items-center gap-3">
+                <span className={`text-base ${item.isUnlocked ? 'text-(--color-green-bright)' : 'text-(--color-text-faint)'}`}>
                   {item.isUnlocked ? '✓' : '○'}
                 </span>
                 <div>
-                  <p style={{
-                    color: item.isUnlocked ? 'var(--color-text-muted)' : 'var(--color-text)',
-                    fontSize: '0.95rem',
-                    textDecoration: item.isUnlocked ? 'line-through' : 'none',
-                  }}>
+                  <p className={`text-[0.95rem] ${item.isUnlocked ? 'text-(--color-text-muted) line-through' : 'text-(--color-text)'}`}>
                     {item.label}
                   </p>
                   {item.milestoneTrigger && (
-                    <p style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--color-text-faint)',
-                      fontStyle: 'italic',
-                    }}>
+                    <p className="text-[0.75rem] text-(--color-text-faint) italic">
                       Unlocks on: {item.milestoneTrigger}
                     </p>
                   )}
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div className="flex items-center gap-4">
                 {item.estimatedCost && (
-                  <span style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '0.9rem',
-                    color: 'var(--color-gold-dim)',
-                  }}>
+                  <span className="font-display text-[0.9rem] text-(--color-gold-dim)">
                     ${item.estimatedCost.toFixed(2)}
                   </span>
                 )}
                 <button
                   onClick={() => handleDelete(item.id)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--color-text-faint)',
-                    cursor: 'pointer',
-                    fontSize: '1rem',
-                    lineHeight: 1,
-                    padding: '0.2rem',
-                    transition: 'color 0.15s',
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = 'var(--color-red-bright)')
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = 'var(--color-text-faint)')
-                  }
+                  className="bg-transparent border-none text-(--color-text-faint) cursor-pointer text-base leading-none p-1 transition-colors duration-150 hover:text-(--color-red-bright)"
                   title="Remove item"
                 >
                   ×
@@ -407,25 +256,9 @@ export default function RewardsPage() {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div style={{
-      padding: '0.6rem 0.75rem',
-      borderBottom: '1px solid var(--color-border)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-    }}>
-      <div style={{
-        width: '3px', height: '14px',
-        background: 'var(--color-gold)',
-        borderRadius: '1px',
-      }} />
-      <span style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: '0.7rem',
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
-        color: 'var(--color-text-muted)',
-      }}>
+    <div className="px-3 py-[0.6rem] border-b border-(--color-border) flex items-center gap-2">
+      <div className="w-[3px] h-[14px] bg-(--color-gold) rounded-[1px] shrink-0" />
+      <span className="font-display text-[0.75rem] tracking-[0.12em] uppercase text-(--color-text-muted) font-semibold">
         {title}
       </span>
     </div>
@@ -444,71 +277,22 @@ function WeekStat({
   achieved: boolean
 }) {
   return (
-    <div style={{
-      padding: '0.75rem',
-      background: 'var(--color-surface-raised)',
-      border: `1px solid ${achieved ? 'var(--color-green-bright)' : 'var(--color-border)'}`,
-      borderRadius: '2px',
-    }}>
-      <p style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: '0.6rem',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-        color: 'var(--color-text-faint)',
-        marginBottom: '0.3rem',
-      }}>
+    <div className={`p-3 bg-(--color-surface-raised) rounded-xs border ${achieved ? 'border-(--color-green-bright)' : 'border-(--color-border)'}`}>
+      <p className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint) mb-[0.3rem]">
         {label}
       </p>
-      <p style={{
-        fontSize: '1rem',
-        color: achieved ? 'var(--color-green-bright)' : 'var(--color-text)',
-        fontFamily: 'var(--font-display)',
-      }}>
+      <p className={`font-display text-base ${achieved ? 'text-(--color-green-bright)' : 'text-(--color-text)'}`}>
         {value}
       </p>
-      <p style={{
-        fontSize: '0.7rem',
-        color: 'var(--color-text-faint)',
-        marginTop: '0.15rem',
-      }}>
-        {detail}
-      </p>
+      <p className="text-[0.75rem] text-(--color-text-faint) mt-[0.15rem]">{detail}</p>
     </div>
   )
 }
 
 function FieldLabel({ text }: { text: string }) {
   return (
-    <span style={{
-      fontFamily: 'var(--font-display)',
-      fontSize: '0.65rem',
-      letterSpacing: '0.1em',
-      textTransform: 'uppercase',
-      color: 'var(--color-text-faint)',
-      display: 'block',
-      marginBottom: '0.3rem',
-    }}>
+    <span className="block font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint) mb-[0.3rem]">
       {text}
     </span>
   )
-}
-
-const cardStyle: React.CSSProperties = {
-  background: 'var(--color-surface)',
-  border: '1px solid var(--color-border)',
-  borderRadius: '4px',
-  overflow: 'hidden',
-}
-
-const inputStyle: React.CSSProperties = {
-  background: 'var(--color-surface)',
-  border: '1px solid var(--color-border-bright)',
-  borderRadius: '2px',
-  color: 'var(--color-text)',
-  padding: '0.55rem 0.75rem',
-  fontSize: '0.95rem',
-  fontFamily: 'var(--font-body)',
-  outline: 'none',
-  width: '100%',
 }

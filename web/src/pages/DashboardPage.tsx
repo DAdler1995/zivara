@@ -1,17 +1,21 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/useAuth'
-import { getTodayActivity, checkIn, logWater, removeLastWater } from '../api/activity'
+import { usePageTitle } from '../context/usePageTitle'
+import { getTodayActivity, checkIn, logWater, removeLastWater, getGoogleFitStatus, getGoogleFitAuthUrl, triggerGoogleFitSync, disconnectGoogleFit } from '../api/activity'
 import { getDailyQuests } from '../api/quests'
 import { getJarSummary } from '../api/rewards'
-import type { TodayActivityResponse } from '../api/activity'
+import type { TodayActivityResponse, GoogleFitStatusResponse } from '../api/activity'
 import type { DailyQuestsResponse } from '../api/quests'
 import type { JarSummaryResponse } from '../api/rewards'
+import { STEP_GOALS, SkillType } from '@zivara/shared'
 import LogMealModal from '../components/LogMealModal'
 import LogWorkoutModal from '../components/LogWorkoutModal'
 import LogWeightModal from '../components/LogWeightModal'
+import LogStepsModal from '../components/LogStepsModal'
 
 export default function DashboardPage() {
-  const { character } = useAuth()
+  usePageTitle('Dashboard')
+  const { character, refreshCharacter } = useAuth()
   const [activity, setActivity] = useState<TodayActivityResponse | null>(null)
   const [quests, setQuests] = useState<DailyQuestsResponse | null>(null)
   const [jar, setJar] = useState<JarSummaryResponse | null>(null)
@@ -19,48 +23,54 @@ export default function DashboardPage() {
   const [showMealModal, setShowMealModal] = useState(false)
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [showWeightModal, setShowWeightModal] = useState(false)
+  const [showStepsModal, setShowStepsModal] = useState(false)
+  const [googleFitStatus, setGoogleFitStatus] = useState<GoogleFitStatusResponse | null>(null)
+  const [syncingGoogle, setSyncingGoogle] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
-      const [activityData, questsData, jarData] = await Promise.all([
+      const [activityData, questsData, jarData, googleStatus] = await Promise.all([
         getTodayActivity(),
         getDailyQuests(),
         getJarSummary(),
+        getGoogleFitStatus(),
+        refreshCharacter(),
       ])
       setActivity(activityData)
       setQuests(questsData)
       setJar(jarData)
+      setGoogleFitStatus(googleStatus)
     } catch (err) {
       console.error('Failed to load dashboard data', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [refreshCharacter])
 
-useEffect(() => {
-  let cancelled = false
+  useEffect(() => {
+    let cancelled = false
 
-  async function load() {
-    try {
-      const [activityData, questsData, jarData] = await Promise.all([
-        getTodayActivity(),
-        getDailyQuests(),
-        getJarSummary(),
-      ])
-      if (cancelled) return
-      setActivity(activityData)
-      setQuests(questsData)
-      setJar(jarData)
-    } catch (err) {
-      console.error('Failed to load dashboard data', err)
-    } finally {
-      if (!cancelled) setLoading(false)
+    async function load() {
+      try {
+        const [activityData, questsData, jarData] = await Promise.all([
+          getTodayActivity(),
+          getDailyQuests(),
+          getJarSummary(),
+        ])
+        if (cancelled) return
+        setActivity(activityData)
+        setQuests(questsData)
+        setJar(jarData)
+      } catch (err) {
+        console.error('Failed to load dashboard data', err)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
-  }
 
-  load()
-  return () => { cancelled = true }
-}, [])
+    load()
+    return () => { cancelled = true }
+  }, [])
 
   async function handleCheckIn() {
     try {
@@ -86,109 +96,197 @@ useEffect(() => {
     }
   }
 
+  // Handle OAuth return from Google — clear the query param so it doesn't persist on refresh
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const googlefit = params.get('googlefit')
+    if (googlefit) {
+      window.history.replaceState({}, '', window.location.pathname)
+      if (googlefit === 'connected') loadData()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleGoogleConnect() {
+    try {
+      const { authUrl } = await getGoogleFitAuthUrl()
+      window.location.href = authUrl
+    } catch {
+      console.error('Failed to get Google Fit auth URL')
+    }
+  }
+
+  async function handleGoogleSync() {
+    setSyncingGoogle(true)
+    try {
+      await triggerGoogleFitSync()
+      await loadData()
+    } catch {
+      console.error('Google Fit sync failed')
+    } finally {
+      setSyncingGoogle(false)
+    }
+  }
+
+  async function handleGoogleDisconnect() {
+    try {
+      await disconnectGoogleFit()
+      await loadData()
+    } catch {
+      console.error('Failed to disconnect Google Fit')
+    }
+  }
+
   if (loading) {
     return (
-      <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', paddingTop: '2rem' }}>
+      <div className="text-[var(--color-text-muted)] italic pt-8">
         The realm is loading...
       </div>
     )
   }
 
   const weekPercent = jar ? Math.round(jar.currentWeekUnlockedPercent * 100) : 0
+  const stepsToday = activity?.stepsToday ?? 0
+  const agilityLevel = character?.skills.find(s => s.skillType === SkillType.Agility)?.level ?? 1
+  const stepGoal = getStepGoal(agilityLevel)
+  const existingStepCount = stepsToday > 0 ? stepsToday : null
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="flex flex-col gap-6">
 
       {/* Welcome header */}
       <div>
-        <h1 style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>
-          {character?.name}
-        </h1>
-        <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+        <h1 className="text-[1.75rem] mb-1">{character?.name}</h1>
+        <p className="text-[var(--color-text-muted)] italic">
           Total Level {character?.totalLevel} — {getGreeting()}
         </p>
       </div>
 
-      {/* Top row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+      {/* Step count card */}
+      <div className="card">
+        <SectionHeader title="Today's Steps" />
+        <div className="p-3 flex flex-col gap-3">
+          <div className="flex justify-between items-baseline gap-4">
+            <span className="font-display text-[1.1rem] text-[var(--color-text)]">
+              {stepsToday > 0 ? `${stepsToday.toLocaleString()} steps` : 'No steps logged today'}
+            </span>
+            <span className="text-[var(--color-text-muted)] text-sm shrink-0">
+              Goal: {stepGoal.toLocaleString()}
+            </span>
+          </div>
+          <div className="h-[6px] bg-[var(--color-border)] rounded-[3px] overflow-hidden">
+            <div
+              className="h-full transition-[width] duration-300"
+              style={{
+                width: `${Math.min(100, stepsToday > 0 ? (stepsToday / stepGoal) * 100 : 0)}%`,
+                background: 'linear-gradient(90deg, var(--color-gold-dim), var(--color-gold))',
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {/* Google Fit section */}
+            {googleFitStatus?.isConnected ? (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleGoogleSync}
+                  disabled={syncingGoogle}
+                  className="font-display text-xs tracking-widest uppercase min-h-11 px-4 border rounded-xs cursor-pointer transition-all duration-150 border-(--color-border-bright) bg-transparent text-(--color-text-muted) hover:border-(--color-gold-dim) hover:text-(--color-text) disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {syncingGoogle ? 'Syncing...' : 'Sync Now'}
+                </button>
+                <div className="flex flex-col">
+                  <span className="text-[0.75rem] text-(--color-text-faint)">
+                    Google Fit connected
+                  </span>
+                  {googleFitStatus.lastSyncedAt && (
+                    <span className="text-[0.7rem] text-(--color-text-faint)">
+                      Last synced {formatRelativeTime(googleFitStatus.lastSyncedAt)}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={handleGoogleDisconnect}
+                  className="text-[0.75rem] text-(--color-text-faint) bg-transparent border-none cursor-pointer hover:text-(--color-text-muted) transition-colors duration-150 ml-1"
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGoogleConnect}
+                className="font-display text-xs tracking-widest uppercase min-h-11 px-4 border rounded-xs cursor-pointer transition-all duration-150 border-(--color-border-bright) bg-transparent text-(--color-text-muted) hover:border-(--color-gold-dim) hover:text-(--color-text)"
+              >
+                Connect Google Fit
+              </button>
+            )}
+
+            {/* Manual entry button */}
+            <button
+              onClick={() => setShowStepsModal(true)}
+              className="font-display text-xs tracking-widest uppercase min-h-11 px-4 border rounded-xs cursor-pointer transition-all duration-150 border-(--color-border-bright) bg-transparent text-(--color-text-muted) hover:border-(--color-gold-dim) hover:text-(--color-text)"
+            >
+              {existingStepCount !== null ? 'Update Steps' : 'Log Steps'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Top row: quests + right column */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Daily quests */}
-        <div style={cardStyle}>
+        <div className="card">
           <SectionHeader title="Daily Quests" />
           {quests?.quests.map((quest) => (
             <div
               key={quest.id}
-              style={{
-                padding: '0.75rem',
-                borderBottom: '1px solid var(--color-border)',
-                opacity: quest.status === 'Completed' ? 0.5 : 1,
-              }}
+              className={`p-3 border-b border-[var(--color-border)] ${quest.status === 'Completed' ? 'opacity-50' : ''}`}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '0.7rem',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: quest.status === 'Completed'
-                      ? 'var(--color-green-bright)'
-                      : 'var(--color-gold-dim)',
-                  }}
-                >
+              <div className="flex justify-between mb-[0.4rem]">
+                <span className={`font-display text-xs tracking-[0.1em] uppercase ${
+                  quest.status === 'Completed'
+                    ? 'text-[var(--color-green-bright)]'
+                    : 'text-[var(--color-gold-dim)]'
+                }`}>
                   {quest.skillTarget}
                   {quest.status === 'Completed' && ' — Complete'}
                 </span>
-                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
+                <span className="text-[var(--color-text-muted)] text-sm">
                   {quest.currentValue}/{quest.targetValue}
                 </span>
               </div>
-              <p style={{ color: 'var(--color-text)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+              <p className="text-[var(--color-text)] text-[0.95rem] leading-[1.5]">
                 {quest.description}
               </p>
-              {/* Progress bar */}
-              <div style={{
-                marginTop: '0.5rem',
-                height: '3px',
-                background: 'var(--color-border)',
-                borderRadius: '2px',
-                overflow: 'hidden',
-              }}>
-                <div style={{
-                  height: '100%',
-                  width: `${Math.min(100, (quest.currentValue / quest.targetValue) * 100)}%`,
-                  background: quest.status === 'Completed'
-                    ? 'var(--color-green-bright)'
-                    : 'var(--color-gold)',
-                  transition: 'width 0.3s ease',
-                }} />
+              <div className="mt-2 h-[3px] bg-[var(--color-border)] rounded-[2px] overflow-hidden">
+                <div
+                  className={`h-full transition-[width] duration-300 ${
+                    quest.status === 'Completed'
+                      ? 'bg-[var(--color-green-bright)]'
+                      : 'bg-[var(--color-gold)]'
+                  }`}
+                  style={{ width: `${Math.min(100, (quest.currentValue / quest.targetValue) * 100)}%` }}
+                />
               </div>
             </div>
           ))}
           {quests?.allCompleted && (
-            <p style={{
-              padding: '0.75rem',
-              color: 'var(--color-green-bright)',
-              fontStyle: 'italic',
-              fontSize: '0.9rem',
-              textAlign: 'center',
-            }}>
+            <p className="p-3 text-[var(--color-green-bright)] italic text-[0.9rem] text-center">
               All quests complete. Well done, adventurer.
             </p>
           )}
         </div>
 
-        {/* Right column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {/* Right column: hydration + reward jar */}
+        <div className="flex flex-col gap-6">
 
           {/* Water tracker */}
-          <div style={cardStyle}>
+          <div className="card">
             <SectionHeader title="Hydration" />
-            <div style={{ padding: '0.75rem' }}>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+            <div className="p-3">
+              <p className="text-[var(--color-text-muted)] text-sm mb-3">
                 {activity?.waterGlassesToday ?? 0} of 8 glasses today
               </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="flex gap-2">
                 {Array.from({ length: 8 }).map((_, i) => {
                   const filled = i < (activity?.waterGlassesToday ?? 0)
                   return (
@@ -196,19 +294,11 @@ useEffect(() => {
                       key={i}
                       onClick={() => handleWaterTap(i)}
                       title={filled ? 'Remove last glass' : 'Log a glass'}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '2px',
-                        border: `1px solid ${filled ? 'var(--color-gold)' : 'var(--color-border-bright)'}`,
-                        background: filled ? 'var(--color-gold)' : 'transparent',
-                        cursor: 'pointer',
-                        fontSize: '1.1rem',
-                        transition: 'all 0.15s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
+                      className={`flex-1 h-9 rounded-[2px] border cursor-pointer text-lg transition-all duration-150 flex items-center justify-center ${
+                        filled
+                          ? 'border-[var(--color-gold)] bg-[var(--color-gold)]'
+                          : 'border-[var(--color-border-bright)] bg-transparent hover:border-[var(--color-gold-dim)]'
+                      }`}
                     >
                       {filled ? '💧' : '○'}
                     </button>
@@ -219,45 +309,33 @@ useEffect(() => {
           </div>
 
           {/* Reward jar */}
-          <div style={cardStyle}>
+          <div className="card">
             <SectionHeader title="Reward Jar" />
-            <div style={{ padding: '0.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-                  Total unlocked
-                </span>
-                <span style={{
-                  fontFamily: 'var(--font-display)',
-                  color: 'var(--color-gold)',
-                  fontSize: '1.1rem',
-                }}>
+            <div className="p-3">
+              <div className="flex justify-between mb-2">
+                <span className="text-[var(--color-text-muted)] text-sm">Total unlocked</span>
+                <span className="font-display text-[var(--color-gold)] text-[1.1rem]">
                   ${jar?.totalUnlockedBalance.toFixed(2) ?? '0.00'}
                 </span>
               </div>
-              <div style={{ marginBottom: '0.4rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
-                    This week
-                  </span>
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
+              <div className="mb-[0.4rem]">
+                <div className="flex justify-between mb-[0.3rem]">
+                  <span className="text-[var(--color-text-muted)] text-sm">This week</span>
+                  <span className="text-[var(--color-text-muted)] text-sm">
                     {weekPercent}% — ${jar?.currentWeekUnlockedAmount.toFixed(2) ?? '0.00'} of ${jar?.currentWeekMaxEarn.toFixed(2) ?? '50.00'}
                   </span>
                 </div>
-                <div style={{
-                  height: '6px',
-                  background: 'var(--color-border)',
-                  borderRadius: '3px',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${weekPercent}%`,
-                    background: 'linear-gradient(90deg, var(--color-gold-dim), var(--color-gold))',
-                    transition: 'width 0.3s ease',
-                  }} />
+                <div className="h-[6px] bg-[var(--color-border)] rounded-[3px] overflow-hidden">
+                  <div
+                    className="h-full transition-[width] duration-300"
+                    style={{
+                      width: `${weekPercent}%`,
+                      background: 'linear-gradient(90deg, var(--color-gold-dim), var(--color-gold))',
+                    }}
+                  />
                 </div>
               </div>
-              <p style={{ color: 'var(--color-text-faint)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+              <p className="text-[var(--color-text-faint)] text-sm italic">
                 {jar?.dailyQuestDaysCompletedThisWeek ?? 0}/7 quest days this week
               </p>
             </div>
@@ -266,14 +344,9 @@ useEffect(() => {
       </div>
 
       {/* Action buttons */}
-      <div style={cardStyle}>
+      <div className="card">
         <SectionHeader title="Log Activity" />
-        <div style={{
-          padding: '0.75rem',
-          display: 'flex',
-          gap: '0.75rem',
-          flexWrap: 'wrap',
-        }}>
+        <div className="p-3 flex flex-col md:flex-row gap-3">
           <ActionButton
             label="Check In"
             done={activity?.checkedInToday}
@@ -295,14 +368,9 @@ useEffect(() => {
       </div>
 
       {/* Today's summary */}
-      <div style={cardStyle}>
+      <div className="card">
         <SectionHeader title="Today" />
-        <div style={{
-          padding: '0.75rem',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '1rem',
-        }}>
+        <div className="p-3 grid grid-cols-3 gap-4">
           <Stat label="Steps" value={activity?.stepsToday.toLocaleString() ?? '0'} />
           <Stat label="Meals Logged" value={String(activity?.mealsLoggedToday ?? 0)} />
           <Stat
@@ -332,34 +400,22 @@ useEffect(() => {
           onSuccess={() => { setShowWeightModal(false); loadData() }}
         />
       )}
+      {showStepsModal && (
+        <LogStepsModal
+          onClose={() => setShowStepsModal(false)}
+          onSuccess={() => { setShowStepsModal(false); loadData() }}
+          existingStepCount={existingStepCount}
+        />
+      )}
     </div>
   )
 }
 
-// Helper components
-
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div style={{
-      padding: '0.6rem 0.75rem',
-      borderBottom: '1px solid var(--color-border)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-    }}>
-      <div style={{
-        width: '3px',
-        height: '14px',
-        background: 'var(--color-gold)',
-        borderRadius: '1px',
-      }} />
-      <span style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: '0.7rem',
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
-        color: 'var(--color-text-muted)',
-      }}>
+    <div className="px-3 py-[0.6rem] border-b border-[var(--color-border)] flex items-center gap-2">
+      <div className="w-[3px] h-[14px] bg-[var(--color-gold)] rounded-[1px] shrink-0" />
+      <span className="font-display text-xs tracking-[0.12em] uppercase text-[var(--color-text-muted)] font-semibold">
         {title}
       </span>
     </div>
@@ -378,31 +434,11 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
-      style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: '0.7rem',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-        padding: '0.5rem 1rem',
-        border: `1px solid ${done ? 'var(--color-green-bright)' : 'var(--color-border-bright)'}`,
-        borderRadius: '2px',
-        background: done ? 'rgba(42, 92, 42, 0.3)' : 'transparent',
-        color: done ? 'var(--color-green-bright)' : 'var(--color-text-muted)',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-      }}
-      onMouseEnter={(e) => {
-        if (!done) {
-          e.currentTarget.style.borderColor = 'var(--color-gold-dim)'
-          e.currentTarget.style.color = 'var(--color-text)'
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!done) {
-          e.currentTarget.style.borderColor = 'var(--color-border-bright)'
-          e.currentTarget.style.color = 'var(--color-text-muted)'
-        }
-      }}
+      className={`font-display text-xs tracking-[0.1em] uppercase min-h-[44px] px-4 w-full md:w-auto border rounded-[2px] cursor-pointer transition-all duration-150 ${
+        done
+          ? 'border-[var(--color-green-bright)] bg-[rgba(42,92,42,0.3)] text-[var(--color-green-bright)]'
+          : 'border-[var(--color-border-bright)] bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-gold-dim)] hover:text-[var(--color-text)]'
+      }`}
     >
       {done ? `✓ ${label}` : label}
     </button>
@@ -420,32 +456,31 @@ function Stat({
 }) {
   return (
     <div>
-      <p style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: '0.65rem',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-        color: 'var(--color-text-faint)',
-        marginBottom: '0.25rem',
-      }}>
+      <p className="font-display text-[0.75rem] tracking-[0.1em] uppercase text-[var(--color-text-faint)] mb-1">
         {label}
       </p>
-      <p style={{
-        fontSize: '1.25rem',
-        color: highlight ? 'var(--color-green-bright)' : 'var(--color-text)',
-        fontFamily: 'var(--font-display)',
-      }}>
+      <p className={`text-[1.25rem] font-display ${highlight ? 'text-[var(--color-green-bright)]' : 'text-[var(--color-text)]'}`}>
         {value}
       </p>
     </div>
   )
 }
 
-const cardStyle: React.CSSProperties = {
-  background: 'var(--color-surface)',
-  border: '1px solid var(--color-border)',
-  borderRadius: '4px',
-  overflow: 'hidden',
+function getStepGoal(agilityLevel: number): number {
+  if (agilityLevel >= 61) return STEP_GOALS.LEVEL_61
+  if (agilityLevel >= 41) return STEP_GOALS.LEVEL_41
+  if (agilityLevel >= 21) return STEP_GOALS.LEVEL_21
+  return STEP_GOALS.LEVEL_1
+}
+
+function formatRelativeTime(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime()
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
 }
 
 function getGreeting() {

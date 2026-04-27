@@ -8,6 +8,12 @@ interface LogMealModalProps {
   onSuccess: () => void
 }
 
+const ratingOptions = [
+  { value: MealRating.Healthy, label: 'Healthy', xp: '+100 XP', activeClass: 'border-(--color-green-bright) text-(--color-green-bright)' },
+  { value: MealRating.Neutral, label: 'Neutral', xp: '+50 XP', activeClass: 'border-(--color-gold-dim) text-(--color-gold-dim)' },
+  { value: MealRating.Unhealthy, label: 'Unhealthy', xp: '+25 XP', activeClass: 'border-(--color-text-muted) text-(--color-text-muted)' },
+]
+
 export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) {
   const [rating, setRating] = useState<MealRating | null>(null)
   const [category, setCategory] = useState<MealCategory | null>(null)
@@ -15,6 +21,7 @@ export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) 
   const [hungerOrHabit, setHungerOrHabit] = useState<HungerOrHabit>(HungerOrHabit.ActuallyHungry)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+  const [resultXp, setResultXp] = useState<{ xp: number; skill: string } | null>(null)
 
   async function handleSubmit() {
     if (!rating) return
@@ -27,6 +34,7 @@ export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) 
         hungerOrHabit,
       })
       setResult(response.message)
+      setResultXp({ xp: response.xpAwarded, skill: response.skillTrained })
       setTimeout(onSuccess, 1200)
     } catch {
       setResult('Something went wrong. Please try again.')
@@ -35,117 +43,75 @@ export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) 
     }
   }
 
-  const ratingOptions = [
-    { value: MealRating.Healthy, label: 'Healthy', xp: '+100 XP', color: 'var(--color-green-bright)' },
-    { value: MealRating.Neutral, label: 'Neutral', xp: '+50 XP', color: 'var(--color-gold-dim)' },
-    { value: MealRating.Unhealthy, label: 'Unhealthy', xp: '+25 XP', color: 'var(--color-text-muted)' },
-  ]
-
   const categories = Object.values(MealCategory)
 
   return (
     <div
       onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.75)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 200, padding: '1rem',
-      }}
+      className="fixed inset-0 bg-black/75 flex items-center justify-center z-200 p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '4px',
-          width: '100%',
-          maxWidth: '480px',
-          overflow: 'hidden',
-        }}
+        className="w-full max-w-120 bg-(--color-surface) border border-(--color-border) rounded-sm flex flex-col max-h-[calc(100vh-4rem)]"
       >
-        {/* Header */}
-        <div style={{
-          padding: '1rem 1.25rem',
-          borderBottom: '1px solid var(--color-border)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <h2 style={{ fontSize: '1rem', color: 'var(--color-gold)' }}>Log Meal</h2>
+        {/* Header — always visible */}
+        <div className="shrink-0 px-5 py-4 border-b border-(--color-border) flex justify-between items-center">
+          <h2 className="text-base">Log Meal</h2>
           <button
             onClick={onClose}
-            style={{
-              background: 'none', border: 'none',
-              color: 'var(--color-text-muted)', cursor: 'pointer',
-              fontSize: '1.2rem', lineHeight: 1,
-            }}
+            className="flex items-center justify-center min-w-11 min-h-11 bg-transparent border-none text-(--color-text-muted) cursor-pointer text-[1.2rem] leading-none"
           >
             ×
           </button>
         </div>
 
-        <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* Scrollable body */}
+        <div className="overflow-y-auto p-5 flex flex-col gap-5">
           {result ? (
-            <p style={{ color: 'var(--color-gold)', fontStyle: 'italic', textAlign: 'center', padding: '1rem' }}>
-              {result}
-            </p>
+            <div className="text-center py-4 flex flex-col gap-2">
+              <p className="text-(--color-gold) italic">{result}</p>
+              {resultXp && resultXp.xp > 0 && (
+                <p className="font-display text-[0.85rem] tracking-widest text-(--color-gold-bright)">
+                  +{resultXp.xp.toLocaleString()} {resultXp.skill} XP
+                </p>
+              )}
+            </div>
           ) : (
             <>
-              {/* Rating -- required */}
+              {/* Rating — required */}
               <div>
-                <Label text="How was it?" />
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <FieldLabel text="How was it?" />
+                <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 mt-2">
                   {ratingOptions.map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() => setRating(opt.value)}
-                      style={{
-                        flex: 1,
-                        padding: '0.65rem 0.5rem',
-                        border: `1px solid ${rating === opt.value ? opt.color : 'var(--color-border-bright)'}`,
-                        borderRadius: '2px',
-                        background: rating === opt.value ? 'rgba(255,255,255,0.05)' : 'transparent',
-                        color: rating === opt.value ? opt.color : 'var(--color-text-muted)',
-                        cursor: 'pointer',
-                        fontFamily: 'var(--font-display)',
-                        fontSize: '0.65rem',
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        transition: 'all 0.15s',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '0.2rem',
-                      }}
+                      className={`min-h-11 px-2 py-2 border rounded-xs cursor-pointer font-display text-[0.75rem] tracking-widest uppercase transition-all duration-150 flex flex-col items-center justify-center gap-1 ${
+                        rating === opt.value
+                          ? `${opt.activeClass} bg-white/5`
+                          : 'border-(--color-border-bright) text-(--color-text-muted) bg-transparent'
+                      }`}
                     >
                       <span>{opt.label}</span>
-                      <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>{opt.xp}</span>
+                      <span className="text-[0.65rem] opacity-70">{opt.xp}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Category -- optional */}
+              {/* Category — optional */}
               <div>
-                <Label text="Category (optional)" />
-                <div style={{
-                  display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem',
-                }}>
+                <FieldLabel text="Category (optional)" />
+                <div className="flex flex-wrap gap-[0.4rem] mt-2">
                   {categories.map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setCategory(category === cat ? null : cat)}
-                      style={{
-                        padding: '0.3rem 0.65rem',
-                        border: `1px solid ${category === cat ? 'var(--color-gold)' : 'var(--color-border)'}`,
-                        borderRadius: '2px',
-                        background: category === cat ? 'rgba(201,168,76,0.1)' : 'transparent',
-                        color: category === cat ? 'var(--color-gold)' : 'var(--color-text-muted)',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        transition: 'all 0.15s',
-                      }}
+                      className={`min-h-9 px-3 py-1 border rounded-xs cursor-pointer text-[0.8rem] transition-all duration-150 ${
+                        category === cat
+                          ? 'border-(--color-gold) bg-[rgba(201,168,76,0.1)] text-(--color-gold)'
+                          : 'border-(--color-border) text-(--color-text-muted) bg-transparent'
+                      }`}
                     >
                       {cat}
                     </button>
@@ -153,35 +119,23 @@ export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) 
                 </div>
               </div>
 
-              {/* Notes -- optional */}
+              {/* Notes — optional */}
               <div>
-                <Label text="Notes (optional)" />
+                <FieldLabel text="Notes (optional)" />
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="What did you eat?"
                   maxLength={500}
                   rows={2}
-                  style={{
-                    width: '100%',
-                    marginTop: '0.5rem',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-bright)',
-                    borderRadius: '2px',
-                    color: 'var(--color-text)',
-                    padding: '0.6rem 0.75rem',
-                    fontSize: '1rem',
-                    fontFamily: 'var(--font-body)',
-                    resize: 'vertical',
-                    outline: 'none',
-                  }}
+                  className="w-full mt-2 bg-(--color-surface) border border-(--color-border-bright) rounded-xs text-(--color-text) px-3 py-[0.6rem] text-base font-body resize-y outline-none"
                 />
               </div>
 
-              {/* Hunger or habit -- optional */}
+              {/* Hunger or habit — optional */}
               <div>
-                <Label text="Hunger or habit?" />
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <FieldLabel text="Hunger or habit?" />
+                <div className="grid grid-cols-2 gap-2 mt-2">
                   {[
                     { value: HungerOrHabit.ActuallyHungry, label: 'Actually hungry' },
                     { value: HungerOrHabit.ProbablyBored, label: 'Probably bored' },
@@ -189,18 +143,11 @@ export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) 
                     <button
                       key={opt.value}
                       onClick={() => setHungerOrHabit(opt.value)}
-                      style={{
-                        flex: 1,
-                        padding: '0.5rem',
-                        border: `1px solid ${hungerOrHabit === opt.value ? 'var(--color-gold)' : 'var(--color-border-bright)'}`,
-                        borderRadius: '2px',
-                        background: hungerOrHabit === opt.value ? 'rgba(201,168,76,0.1)' : 'transparent',
-                        color: hungerOrHabit === opt.value ? 'var(--color-gold)' : 'var(--color-text-muted)',
-                        cursor: 'pointer',
-                        fontSize: '0.85rem',
-                        fontFamily: 'var(--font-body)',
-                        transition: 'all 0.15s',
-                      }}
+                      className={`min-h-11 px-2 py-2 border rounded-xs cursor-pointer text-[0.85rem] font-body transition-all duration-150 ${
+                        hungerOrHabit === opt.value
+                          ? 'border-(--color-gold) bg-[rgba(201,168,76,0.1)] text-(--color-gold)'
+                          : 'border-(--color-border-bright) text-(--color-text-muted) bg-transparent'
+                      }`}
                     >
                       {opt.label}
                     </button>
@@ -208,11 +155,7 @@ export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) 
                 </div>
               </div>
 
-              <Button
-                onClick={handleSubmit}
-                loading={loading}
-                disabled={!rating}
-              >
+              <Button onClick={handleSubmit} loading={loading} disabled={!rating}>
                 Log Meal
               </Button>
             </>
@@ -223,15 +166,9 @@ export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) 
   )
 }
 
-function Label({ text }: { text: string }) {
+function FieldLabel({ text }: { text: string }) {
   return (
-    <span style={{
-      fontFamily: 'var(--font-display)',
-      fontSize: '0.7rem',
-      letterSpacing: '0.1em',
-      textTransform: 'uppercase',
-      color: 'var(--color-text-faint)',
-    }}>
+    <span className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint)">
       {text}
     </span>
   )
