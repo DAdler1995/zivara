@@ -43,6 +43,9 @@ public class ZivaraDbContext : DbContext
     // DeviceToken
     public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
 
+    // Google Fit
+    public DbSet<GoogleFitCredential> GoogleFitCredentials => Set<GoogleFitCredential>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -208,6 +211,16 @@ public class ZivaraDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Token).IsUnique();
+            entity.HasOne(e => e.Character)
+                  .WithMany()
+                  .HasForeignKey(e => e.CharacterId);
+        });
+
+        // GoogleFitCredential - unique constraint: one credential per character
+        modelBuilder.Entity<GoogleFitCredential>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.CharacterId).IsUnique();
             entity.HasOne(e => e.Character)
                   .WithMany()
                   .HasForeignKey(e => e.CharacterId);

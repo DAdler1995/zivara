@@ -73,6 +73,11 @@ builder.Services.AddHttpClient<ExpoNotificationService>();
 builder.Services.AddScoped<IExpoNotificationService, ExpoNotificationService>();
 builder.Services.AddHostedService<MovementReminderJob>();
 
+// google fit services
+builder.Services.AddHttpClient<GoogleFitService>();
+builder.Services.AddScoped<IGoogleFitService, GoogleFitService>();
+builder.Services.AddHostedService<GoogleFitSyncJob>();
+
 // jwt authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"]!;

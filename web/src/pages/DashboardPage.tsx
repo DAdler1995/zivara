@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/useAuth'
 import { usePageTitle } from '../context/usePageTitle'
-import { getTodayActivity, checkIn, logWater, removeLastWater } from '../api/activity'
+import { getTodayActivity, checkIn, logWater, removeLastWater, getGoogleFitStatus, getGoogleFitAuthUrl, triggerGoogleFitSync, disconnectGoogleFit } from '../api/activity'
 import { getDailyQuests } from '../api/quests'
 import { getJarSummary } from '../api/rewards'
-import type { TodayActivityResponse } from '../api/activity'
+import type { TodayActivityResponse, GoogleFitStatusResponse } from '../api/activity'
 import type { DailyQuestsResponse } from '../api/quests'
 import type { JarSummaryResponse } from '../api/rewards'
 import { STEP_GOALS, SkillType } from '@zivara/shared'
@@ -24,18 +24,22 @@ export default function DashboardPage() {
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [showWeightModal, setShowWeightModal] = useState(false)
   const [showStepsModal, setShowStepsModal] = useState(false)
+  const [googleFitStatus, setGoogleFitStatus] = useState<GoogleFitStatusResponse | null>(null)
+  const [syncingGoogle, setSyncingGoogle] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
-      const [activityData, questsData, jarData] = await Promise.all([
+      const [activityData, questsData, jarData, googleStatus] = await Promise.all([
         getTodayActivity(),
         getDailyQuests(),
         getJarSummary(),
+        getGoogleFitStatus(),
         refreshCharacter(),
       ])
       setActivity(activityData)
       setQuests(questsData)
       setJar(jarData)
+      setGoogleFitStatus(googleStatus)
     } catch (err) {
       console.error('Failed to load dashboard data', err)
     } finally {
@@ -92,6 +96,46 @@ export default function DashboardPage() {
     }
   }
 
+  // Handle OAuth return from Google — clear the query param so it doesn't persist on refresh
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const googlefit = params.get('googlefit')
+    if (googlefit) {
+      window.history.replaceState({}, '', window.location.pathname)
+      if (googlefit === 'connected') loadData()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleGoogleConnect() {
+    try {
+      const { authUrl } = await getGoogleFitAuthUrl()
+      window.location.href = authUrl
+    } catch {
+      console.error('Failed to get Google Fit auth URL')
+    }
+  }
+
+  async function handleGoogleSync() {
+    setSyncingGoogle(true)
+    try {
+      await triggerGoogleFitSync()
+      await loadData()
+    } catch {
+      console.error('Google Fit sync failed')
+    } finally {
+      setSyncingGoogle(false)
+    }
+  }
+
+  async function handleGoogleDisconnect() {
+    try {
+      await disconnectGoogleFit()
+      await loadData()
+    } catch {
+      console.error('Failed to disconnect Google Fit')
+    }
+  }
+
   if (loading) {
     return (
       <div className="text-[var(--color-text-muted)] italic pt-8">
@@ -138,10 +182,47 @@ export default function DashboardPage() {
               }}
             />
           </div>
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {/* Google Fit section */}
+            {googleFitStatus?.isConnected ? (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleGoogleSync}
+                  disabled={syncingGoogle}
+                  className="font-display text-xs tracking-widest uppercase min-h-11 px-4 border rounded-xs cursor-pointer transition-all duration-150 border-(--color-border-bright) bg-transparent text-(--color-text-muted) hover:border-(--color-gold-dim) hover:text-(--color-text) disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {syncingGoogle ? 'Syncing...' : 'Sync Now'}
+                </button>
+                <div className="flex flex-col">
+                  <span className="text-[0.75rem] text-(--color-text-faint)">
+                    Google Fit connected
+                  </span>
+                  {googleFitStatus.lastSyncedAt && (
+                    <span className="text-[0.7rem] text-(--color-text-faint)">
+                      Last synced {formatRelativeTime(googleFitStatus.lastSyncedAt)}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={handleGoogleDisconnect}
+                  className="text-[0.75rem] text-(--color-text-faint) bg-transparent border-none cursor-pointer hover:text-(--color-text-muted) transition-colors duration-150 ml-1"
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGoogleConnect}
+                className="font-display text-xs tracking-widest uppercase min-h-11 px-4 border rounded-xs cursor-pointer transition-all duration-150 border-(--color-border-bright) bg-transparent text-(--color-text-muted) hover:border-(--color-gold-dim) hover:text-(--color-text)"
+              >
+                Connect Google Fit
+              </button>
+            )}
+
+            {/* Manual entry button */}
             <button
               onClick={() => setShowStepsModal(true)}
-              className="font-display text-xs tracking-[0.1em] uppercase min-h-[44px] px-4 border rounded-[2px] cursor-pointer transition-all duration-150 border-[var(--color-border-bright)] bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-gold-dim)] hover:text-[var(--color-text)]"
+              className="font-display text-xs tracking-widest uppercase min-h-11 px-4 border rounded-xs cursor-pointer transition-all duration-150 border-(--color-border-bright) bg-transparent text-(--color-text-muted) hover:border-(--color-gold-dim) hover:text-(--color-text)"
             >
               {existingStepCount !== null ? 'Update Steps' : 'Log Steps'}
             </button>
@@ -390,6 +471,16 @@ function getStepGoal(agilityLevel: number): number {
   if (agilityLevel >= 41) return STEP_GOALS.LEVEL_41
   if (agilityLevel >= 21) return STEP_GOALS.LEVEL_21
   return STEP_GOALS.LEVEL_1
+}
+
+function formatRelativeTime(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime()
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
 }
 
 function getGreeting() {

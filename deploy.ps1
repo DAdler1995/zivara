@@ -22,6 +22,16 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# -------------------- DB Migrations --------------------
+Write-Host "Applying database migrations..." -ForegroundColor Yellow
+dotnet ef database update --project .\backend\Zivara\Zivara.Api\Zivara.Api.csproj --no-build
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Migration failed. Aborting deploy." -ForegroundColor Red
+    exit 1
+}
+Write-Host "Database up to date." -ForegroundColor Green
+
 Write-Host "Stopping API service on server..." -ForegroundColor Yellow
 Invoke-Command -ComputerName $serverIp -Credential $creds -ScriptBlock {
     Stop-Service ZivaraApi -Force -ErrorAction SilentlyContinue
