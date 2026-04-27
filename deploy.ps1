@@ -2,16 +2,11 @@
 # Run from the repo root: .\deploy.ps1
 
 $serverIp = "192.168.1.32"
-$apiShare = "\\$serverIp\Zivara"
-$webShare = "\\$serverIp\ZivaraWeb"
 $apiPublishPath = ".\backend\Zivara\Zivara.Api\publish"
-$webBuildPath = ".\web\dist"
-$serviceName = "ZivaraApi"
+$webBuildPath   = ".\web\dist"
 
 # Prompt for server credentials once and reuse
 $creds = Get-Credential -Message "Enter server credentials"
-$username = $creds.UserName
-$password = $creds.GetNetworkCredential().Password
 
 # -------------------- API --------------------
 Write-Host "Publishing Zivara API..." -ForegroundColor Yellow
@@ -32,20 +27,39 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "Database up to date." -ForegroundColor Green
 
-Write-Host "Stopping API service on server..." -ForegroundColor Yellow
-Invoke-Command -ComputerName $serverIp -Credential $creds -ScriptBlock {
-    Stop-Service ZivaraApi -Force -ErrorAction SilentlyContinue
+# -------------------- Remote session --------------------
+$session = New-PSSession -ComputerName $serverIp -Credential $creds
+
+# Discover the real filesystem paths the SMB shares point to on the server
+$serverPaths = Invoke-Command -Session $session -ScriptBlock {
+    @{
+        ApiPath = (Get-SmbShare -Name "Zivara").Path
+        WebPath = (Get-SmbShare -Name "ZivaraWeb").Path
+    }
 }
+$apiServerPath = $serverPaths.ApiPath
+$webServerPath = $serverPaths.WebPath
+
+Write-Host "Server paths - API: $apiServerPath  Web: $webServerPath" -ForegroundColor DarkGray
+
+# -------------------- Deploy API --------------------
+Write-Host "Stopping API service on server..." -ForegroundColor Yellow
+Invoke-Command -Session $session -ScriptBlock { Stop-Service ZivaraApi -Force -ErrorAction SilentlyContinue }
 
 Write-Host "Copying API files to server..." -ForegroundColor Yellow
-net use $apiShare $password /user:$username | Out-Null
-robocopy $apiPublishPath $apiShare /MIR /NFL /NDL /NJH /NJS /XF "appsettings.Production.json"
-net use $apiShare /delete | Out-Null
+# Mirror: clear destination (preserve Production config), then copy fresh
+Invoke-Command -Session $session -ScriptBlock {
+    param($path)
+    Get-ChildItem -Path $path -Exclude "appsettings.Production.json" |
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+} -ArgumentList $apiServerPath
+
+Get-ChildItem -Path $apiPublishPath -Exclude "appsettings.Production.json" | ForEach-Object {
+    Copy-Item -Path $_.FullName -Destination $apiServerPath -ToSession $session -Recurse -Force
+}
 
 Write-Host "Starting API service on server..." -ForegroundColor Yellow
-Invoke-Command -ComputerName $serverIp -Credential $creds -ScriptBlock {
-    Start-Service ZivaraApi
-}
+Invoke-Command -Session $session -ScriptBlock { Start-Service ZivaraApi }
 
 # -------------------- Web --------------------
 Write-Host "Building Zivara web frontend..." -ForegroundColor Yellow
@@ -55,18 +69,23 @@ cd ..
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Web build failed. Aborting deploy." -ForegroundColor Red
+    Remove-PSSession $session
     exit 1
 }
 
 Write-Host "Copying web files to server..." -ForegroundColor Yellow
-net use $webShare $password /user:$username | Out-Null
-robocopy $webBuildPath $webShare /MIR /NFL /NDL /NJH /NJS
-net use $webShare /delete | Out-Null
+Invoke-Command -Session $session -ScriptBlock {
+    param($path)
+    Get-ChildItem -Path $path | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+} -ArgumentList $webServerPath
+
+Get-ChildItem -Path $webBuildPath | ForEach-Object {
+    Copy-Item -Path $_.FullName -Destination $webServerPath -ToSession $session -Recurse -Force
+}
 
 # -------------------- Status --------------------
 Write-Host "Checking API service status..." -ForegroundColor Yellow
-Invoke-Command -ComputerName $serverIp -Credential $creds -ScriptBlock {
-    Get-Service ZivaraApi
-}
+Invoke-Command -Session $session -ScriptBlock { Get-Service ZivaraApi }
 
+Remove-PSSession $session
 Write-Host "Deploy complete." -ForegroundColor Green
