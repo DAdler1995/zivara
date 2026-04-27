@@ -4,12 +4,13 @@ const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
 })
 
-// Attach JWT token to every request if one exists
+// Attach JWT token and client timezone offset to every request
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  config.headers['X-Client-Utc-Offset'] = String(-new Date().getTimezoneOffset())
   return config
 })
 

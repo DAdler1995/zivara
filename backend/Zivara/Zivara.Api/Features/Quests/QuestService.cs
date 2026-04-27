@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Zivara.Api.Data;
 using Zivara.Api.Features.Character;
 
@@ -14,25 +15,42 @@ public interface IQuestService
 public class QuestService : IQuestService
 {
     private readonly ZivaraDbContext _db;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly Random _random = new();
 
-    public QuestService(ZivaraDbContext db)
+    public QuestService(ZivaraDbContext db, IHttpContextAccessor httpContextAccessor)
     {
         _db = db;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private (DateTime StartUtc, DateTime EndUtc) GetTodayBounds()
+    {
+        var offsetStr = _httpContextAccessor.HttpContext?.Request.Headers["X-Client-Utc-Offset"].FirstOrDefault();
+        if (int.TryParse(offsetStr, out var offsetMinutes))
+        {
+            var localNow = DateTime.UtcNow.AddMinutes(offsetMinutes);
+            var localDate = DateOnly.FromDateTime(localNow);
+            var startUtc = DateTime.SpecifyKind(
+                localDate.ToDateTime(TimeOnly.MinValue).AddMinutes(-offsetMinutes),
+                DateTimeKind.Utc);
+            return (startUtc, startUtc.AddDays(1));
+        }
+        var utcDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var start = DateTime.SpecifyKind(utcDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+        return (start, start.AddDays(1));
     }
 
     public async Task GenerateDailyQuestsAsync(Guid characterId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var todayStart = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-        var todayEnd = today.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+        var (todayStartUtc, todayEndUtc) = GetTodayBounds();
 
         // Do not generate if quests already exist for today
         var existingQuests = await _db.Quests
             .AnyAsync(q => q.CharacterId == characterId &&
                            q.QuestType == QuestType.Daily &&
-                           q.GeneratedAt >= todayStart &&
-                           q.GeneratedAt <= todayEnd);
+                           q.GeneratedAt >= todayStartUtc &&
+                           q.GeneratedAt < todayEndUtc);
 
         if (existingQuests) return;
 
@@ -48,7 +66,7 @@ public class QuestService : IQuestService
             .Take(3)
             .ToList();
 
-        var expiry = todayEnd;
+        var expiry = todayEndUtc;
 
         foreach (var skillType in selectedSkills)
         {
@@ -79,8 +97,7 @@ public class QuestService : IQuestService
 
     public async Task<DailyQuestsResponse> GetDailyQuestsAsync(Guid characterId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var todayStart = today.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var (todayStartUtc, _) = GetTodayBounds();
 
         // Generate quests if none exist for today
         await GenerateDailyQuestsAsync(characterId);
@@ -88,7 +105,7 @@ public class QuestService : IQuestService
         var quests = await _db.Quests
             .Where(q => q.CharacterId == characterId &&
                         q.QuestType == QuestType.Daily &&
-                        q.GeneratedAt >= todayStart)
+                        q.GeneratedAt >= todayStartUtc)
             .OrderBy(q => q.GeneratedAt)
             .ToListAsync();
 

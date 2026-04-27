@@ -78,6 +78,8 @@ builder.Services.AddHttpClient<GoogleFitService>();
 builder.Services.AddScoped<IGoogleFitService, GoogleFitService>();
 builder.Services.AddHostedService<GoogleFitSyncJob>();
 
+builder.Services.AddHttpContextAccessor();
+
 // jwt authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"]!;

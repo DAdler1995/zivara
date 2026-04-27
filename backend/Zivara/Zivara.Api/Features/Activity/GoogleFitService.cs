@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Zivara.Api.Data;
 
@@ -28,6 +29,7 @@ public class GoogleFitService : IGoogleFitService
     private readonly string _clientSecret;
     private readonly string _redirectUri;
     private readonly string _frontendOrigin;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -39,12 +41,14 @@ public class GoogleFitService : IGoogleFitService
         ZivaraDbContext db,
         IActivityService activityService,
         IDataProtectionProvider dataProtectionProvider,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHttpContextAccessor httpContextAccessor)
     {
         _httpClient = httpClient;
         _db = db;
         _activityService = activityService;
         _protector = dataProtectionProvider.CreateProtector("GoogleFitOAuth");
+        _httpContextAccessor = httpContextAccessor;
 
         var section = configuration.GetSection("GoogleFit");
         _clientId = section["ClientId"] ?? string.Empty;
@@ -131,8 +135,11 @@ public class GoogleFitService : IGoogleFitService
 
         await EnsureFreshTokenAsync(credential);
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var stepCount = await GetStepCountAsync(credential, today);
+        var offsetStr = _httpContextAccessor.HttpContext?.Request.Headers["X-Client-Utc-Offset"].FirstOrDefault();
+        var today = int.TryParse(offsetStr, out var offsetMinutes)
+            ? DateOnly.FromDateTime(DateTime.UtcNow.AddMinutes(offsetMinutes))
+            : DateOnly.FromDateTime(DateTime.UtcNow);
+        var stepCount = await GetStepCountAsync(credential, today, offsetMinutes);
 
         var result = await _activityService.SyncStepsAsync(characterId, new SyncStepsRequest(today, stepCount));
 
@@ -154,7 +161,7 @@ public class GoogleFitService : IGoogleFitService
         }
     }
 
-    // Called by the background job — syncs today and yesterday for a credential
+    // Called by the background job — syncs today and yesterday for a credential (UTC fallback, no HTTP context)
     public async Task SyncCredentialAsync(GoogleFitCredential credential)
     {
         await EnsureFreshTokenAsync(credential);
@@ -164,7 +171,7 @@ public class GoogleFitService : IGoogleFitService
 
         foreach (var date in new[] { today, yesterday })
         {
-            var stepCount = await GetStepCountAsync(credential, date);
+            var stepCount = await GetStepCountAsync(credential, date, null);
             await _activityService.SyncStepsAsync(credential.CharacterId, new SyncStepsRequest(date, stepCount));
         }
 
@@ -193,10 +200,14 @@ public class GoogleFitService : IGoogleFitService
         await _db.SaveChangesAsync();
     }
 
-    private async Task<int> GetStepCountAsync(GoogleFitCredential credential, DateOnly date)
+    private async Task<int> GetStepCountAsync(GoogleFitCredential credential, DateOnly date, int? clientOffsetMinutes)
     {
-        var startMs = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var endMs = new DateTimeOffset(date.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        // Use client timezone offset for midnight boundaries; fall back to UTC if unavailable
+        var offset = clientOffsetMinutes ?? 0;
+        var localMidnight = date.ToDateTime(TimeOnly.MinValue);
+        var localMidnightNext = date.AddDays(1).ToDateTime(TimeOnly.MinValue);
+        var startMs = new DateTimeOffset(localMidnight, TimeSpan.FromMinutes(offset)).ToUnixTimeMilliseconds();
+        var endMs = new DateTimeOffset(localMidnightNext, TimeSpan.FromMinutes(offset)).ToUnixTimeMilliseconds();
 
         var body = JsonSerializer.Serialize(new
         {

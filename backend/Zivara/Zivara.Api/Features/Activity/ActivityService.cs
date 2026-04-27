@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Zivara.Api.Data;
 using Zivara.Api.Features.Character;
 using Zivara.Api.Features.Quests;
@@ -22,12 +23,31 @@ public class ActivityService : IActivityService
     private readonly ZivaraDbContext _db;
     private readonly IXpService _xpService;
     private readonly IQuestProgressService _questProgressService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public ActivityService(ZivaraDbContext db, IXpService xpService, IQuestProgressService questProgressService)
+    public ActivityService(ZivaraDbContext db, IXpService xpService, IQuestProgressService questProgressService, IHttpContextAccessor httpContextAccessor)
     {
         _db = db;
         _xpService = xpService;
         _questProgressService = questProgressService;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private (DateTime StartUtc, DateTime EndUtc, DateOnly LocalDate) GetTodayBounds()
+    {
+        var offsetStr = _httpContextAccessor.HttpContext?.Request.Headers["X-Client-Utc-Offset"].FirstOrDefault();
+        if (int.TryParse(offsetStr, out var offsetMinutes))
+        {
+            var localNow = DateTime.UtcNow.AddMinutes(offsetMinutes);
+            var localDate = DateOnly.FromDateTime(localNow);
+            var startUtc = DateTime.SpecifyKind(
+                localDate.ToDateTime(TimeOnly.MinValue).AddMinutes(-offsetMinutes),
+                DateTimeKind.Utc);
+            return (startUtc, startUtc.AddDays(1), localDate);
+        }
+        var utcDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var start = DateTime.SpecifyKind(utcDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+        return (start, start.AddDays(1), utcDate);
     }
 
     public async Task<ActivityResponse> LogMealAsync(Guid characterId, LogMealRequest request)
@@ -132,12 +152,12 @@ public class ActivityService : IActivityService
         if (request.Glasses <= 0)
             return new ActivityResponse("No glasses logged.", 0, "Hydration");
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var (todayStartUtc, todayEndUtc, _) = GetTodayBounds();
 
         // Count glasses already logged today
         var glassesToday = await _db.WaterLogs
             .Where(w => w.CharacterId == characterId &&
-                        DateOnly.FromDateTime(w.LoggedAt) == today)
+                        w.LoggedAt >= todayStartUtc && w.LoggedAt < todayEndUtc)
             .SumAsync(w => w.Glasses);
 
         var waterLog = new WaterLog
@@ -168,11 +188,11 @@ public class ActivityService : IActivityService
 
     public async Task<bool> RemoveLastWaterLogAsync(Guid characterId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var (todayStartUtc, todayEndUtc, _) = GetTodayBounds();
 
         var lastLog = await _db.WaterLogs
             .Where(w => w.CharacterId == characterId &&
-                        DateOnly.FromDateTime(w.LoggedAt) == today)
+                        w.LoggedAt >= todayStartUtc && w.LoggedAt < todayEndUtc)
             .OrderByDescending(w => w.LoggedAt)
             .FirstOrDefaultAsync();
 
@@ -184,7 +204,7 @@ public class ActivityService : IActivityService
         // Check if daily bonus was awarded and needs reversing
         var glassesToday = await _db.WaterLogs
             .Where(w => w.CharacterId == characterId &&
-                        DateOnly.FromDateTime(w.LoggedAt) == today)
+                        w.LoggedAt >= todayStartUtc && w.LoggedAt < todayEndUtc)
             .SumAsync(w => w.Glasses);
 
         var glassesAfterRemoval = glassesToday - lastLog.Glasses;
@@ -209,13 +229,13 @@ public class ActivityService : IActivityService
 
     public async Task<ActivityResponse?> CheckInAsync(Guid characterId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var (todayStartUtc, todayEndUtc, _) = GetTodayBounds();
 
         // Only allow one check-in per day
         var alreadyCheckedIn = await _db.ActivityLogs
             .AnyAsync(a => a.CharacterId == characterId &&
                            a.ActivityType == ActivityType.DailyCheckin &&
-                           DateOnly.FromDateTime(a.LoggedAt) == today);
+                           a.LoggedAt >= todayStartUtc && a.LoggedAt < todayEndUtc);
 
         if (alreadyCheckedIn) return null;
 
@@ -289,27 +309,27 @@ public class ActivityService : IActivityService
 
     public async Task<TodayActivityResponse> GetTodayActivityAsync(Guid characterId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var (todayStartUtc, todayEndUtc, todayLocal) = GetTodayBounds();
 
         var stepsToday = await _db.StepSyncLogs
-            .Where(s => s.CharacterId == characterId && s.SyncDate == today)
+            .Where(s => s.CharacterId == characterId && s.SyncDate == todayLocal)
             .Select(s => s.StepCount)
             .FirstOrDefaultAsync();
 
         var waterToday = await _db.WaterLogs
             .Where(w => w.CharacterId == characterId &&
-                        DateOnly.FromDateTime(w.LoggedAt) == today)
+                        w.LoggedAt >= todayStartUtc && w.LoggedAt < todayEndUtc)
             .SumAsync(w => w.Glasses);
 
         var mealsToday = await _db.MealLogs
             .Where(m => m.CharacterId == characterId &&
-                        DateOnly.FromDateTime(m.LoggedAt) == today)
+                        m.LoggedAt >= todayStartUtc && m.LoggedAt < todayEndUtc)
             .ToListAsync();
 
         var checkedIn = await _db.ActivityLogs
             .AnyAsync(a => a.CharacterId == characterId &&
                            a.ActivityType == ActivityType.DailyCheckin &&
-                           DateOnly.FromDateTime(a.LoggedAt) == today);
+                           a.LoggedAt >= todayStartUtc && a.LoggedAt < todayEndUtc);
 
         return new TodayActivityResponse(
             stepsToday,

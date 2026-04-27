@@ -65,7 +65,8 @@ export async function getTodayActivity(): Promise<TodayActivityResponse> {
 }
 
 export async function syncSteps(stepCount: number): Promise<ActivityResponse> {
-  const today = new Date().toISOString().slice(0, 10)
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const request: SyncStepsRequest = { date: today, stepCount }
   const response = await client.post<ActivityResponse>('/steps/sync', request)
   return response.data
