@@ -18,14 +18,21 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # -------------------- DB Migrations --------------------
-Write-Host "Applying database migrations..." -ForegroundColor Yellow
-dotnet ef database update --project .\backend\Zivara\Zivara.Api\Zivara.Api.csproj --no-build
+Write-Host "Checking for pending migrations..." -ForegroundColor Yellow
+$migrationOutput = dotnet ef migrations list --project .\backend\Zivara\Zivara.Api\Zivara.Api.csproj --no-build 2>&1
+$pending = $migrationOutput | Where-Object { $_ -match "\(Pending\)" }
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Migration failed. Aborting deploy." -ForegroundColor Red
-    exit 1
+if ($pending) {
+    Write-Host "Applying $($pending.Count) pending migration(s)..." -ForegroundColor Yellow
+    dotnet ef database update --project .\backend\Zivara\Zivara.Api\Zivara.Api.csproj --no-build
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Migration failed. Aborting deploy." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "Migrations applied." -ForegroundColor Green
+} else {
+    Write-Host "No pending migrations." -ForegroundColor Green
 }
-Write-Host "Database up to date." -ForegroundColor Green
 
 # -------------------- Remote session --------------------
 $session = New-PSSession -ComputerName $serverIp -Credential $creds
