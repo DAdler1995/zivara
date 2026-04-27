@@ -21,6 +21,7 @@ export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) 
   const [hungerOrHabit, setHungerOrHabit] = useState<HungerOrHabit>(HungerOrHabit.ActuallyHungry)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+  const [resultXp, setResultXp] = useState<{ xp: number; skill: string } | null>(null)
 
   async function handleSubmit() {
     if (!rating) return
@@ -33,6 +34,7 @@ export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) 
         hungerOrHabit,
       })
       setResult(response.message)
+      setResultXp({ xp: response.xpAwarded, skill: response.skillTrained })
       setTimeout(onSuccess, 1200)
     } catch {
       setResult('Something went wrong. Please try again.')
@@ -66,7 +68,14 @@ export default function LogMealModal({ onClose, onSuccess }: LogMealModalProps) 
         {/* Scrollable body */}
         <div className="overflow-y-auto p-5 flex flex-col gap-5">
           {result ? (
-            <p className="text-(--color-gold) italic text-center py-4">{result}</p>
+            <div className="text-center py-4 flex flex-col gap-2">
+              <p className="text-(--color-gold) italic">{result}</p>
+              {resultXp && resultXp.xp > 0 && (
+                <p className="font-display text-[0.85rem] tracking-widest text-(--color-gold-bright)">
+                  +{resultXp.xp.toLocaleString()} {resultXp.skill} XP
+                </p>
+              )}
+            </div>
           ) : (
             <>
               {/* Rating — required */}

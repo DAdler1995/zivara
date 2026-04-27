@@ -19,6 +19,7 @@ export default function LogWorkoutModal({ onClose, onSuccess }: LogWorkoutModalP
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+  const [resultXp, setResultXp] = useState<{ xp: number; skill: string } | null>(null)
 
   async function handleSubmit() {
     if (!duration) return
@@ -26,6 +27,7 @@ export default function LogWorkoutModal({ onClose, onSuccess }: LogWorkoutModalP
     try {
       const response = await logWorkout({ durationMinutes: duration, notes: notes || undefined })
       setResult(response.message)
+      setResultXp({ xp: response.xpAwarded, skill: response.skillTrained })
       setTimeout(onSuccess, 1200)
     } catch {
       setResult('Something went wrong. Please try again.')
@@ -57,7 +59,14 @@ export default function LogWorkoutModal({ onClose, onSuccess }: LogWorkoutModalP
         {/* Scrollable body */}
         <div className="overflow-y-auto p-5 flex flex-col gap-5">
           {result ? (
-            <p className="text-(--color-gold) italic text-center py-4">{result}</p>
+            <div className="text-center py-4 flex flex-col gap-2">
+              <p className="text-(--color-gold) italic">{result}</p>
+              {resultXp && resultXp.xp > 0 && (
+                <p className="font-display text-[0.85rem] tracking-widest text-(--color-gold-bright)">
+                  +{resultXp.xp.toLocaleString()} {resultXp.skill} XP
+                </p>
+              )}
+            </div>
           ) : (
             <>
               {/* Duration */}

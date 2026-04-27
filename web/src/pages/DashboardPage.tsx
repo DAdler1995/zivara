@@ -7,13 +7,15 @@ import { getJarSummary } from '../api/rewards'
 import type { TodayActivityResponse } from '../api/activity'
 import type { DailyQuestsResponse } from '../api/quests'
 import type { JarSummaryResponse } from '../api/rewards'
+import { STEP_GOALS, SkillType } from '@zivara/shared'
 import LogMealModal from '../components/LogMealModal'
 import LogWorkoutModal from '../components/LogWorkoutModal'
 import LogWeightModal from '../components/LogWeightModal'
+import LogStepsModal from '../components/LogStepsModal'
 
 export default function DashboardPage() {
   usePageTitle('Dashboard')
-  const { character } = useAuth()
+  const { character, refreshCharacter } = useAuth()
   const [activity, setActivity] = useState<TodayActivityResponse | null>(null)
   const [quests, setQuests] = useState<DailyQuestsResponse | null>(null)
   const [jar, setJar] = useState<JarSummaryResponse | null>(null)
@@ -21,6 +23,7 @@ export default function DashboardPage() {
   const [showMealModal, setShowMealModal] = useState(false)
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [showWeightModal, setShowWeightModal] = useState(false)
+  const [showStepsModal, setShowStepsModal] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -28,6 +31,7 @@ export default function DashboardPage() {
         getTodayActivity(),
         getDailyQuests(),
         getJarSummary(),
+        refreshCharacter(),
       ])
       setActivity(activityData)
       setQuests(questsData)
@@ -37,7 +41,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [refreshCharacter])
 
   useEffect(() => {
     let cancelled = false
@@ -97,6 +101,10 @@ export default function DashboardPage() {
   }
 
   const weekPercent = jar ? Math.round(jar.currentWeekUnlockedPercent * 100) : 0
+  const stepsToday = activity?.stepsToday ?? 0
+  const agilityLevel = character?.skills.find(s => s.skillType === SkillType.Agility)?.level ?? 1
+  const stepGoal = getStepGoal(agilityLevel)
+  const existingStepCount = stepsToday > 0 ? stepsToday : null
 
   return (
     <div className="flex flex-col gap-6">
@@ -107,6 +115,38 @@ export default function DashboardPage() {
         <p className="text-[var(--color-text-muted)] italic">
           Total Level {character?.totalLevel} — {getGreeting()}
         </p>
+      </div>
+
+      {/* Step count card */}
+      <div className="card">
+        <SectionHeader title="Today's Steps" />
+        <div className="p-3 flex flex-col gap-3">
+          <div className="flex justify-between items-baseline gap-4">
+            <span className="font-display text-[1.1rem] text-[var(--color-text)]">
+              {stepsToday > 0 ? `${stepsToday.toLocaleString()} steps` : 'No steps logged today'}
+            </span>
+            <span className="text-[var(--color-text-muted)] text-sm shrink-0">
+              Goal: {stepGoal.toLocaleString()}
+            </span>
+          </div>
+          <div className="h-[6px] bg-[var(--color-border)] rounded-[3px] overflow-hidden">
+            <div
+              className="h-full transition-[width] duration-300"
+              style={{
+                width: `${Math.min(100, stepsToday > 0 ? (stepsToday / stepGoal) * 100 : 0)}%`,
+                background: 'linear-gradient(90deg, var(--color-gold-dim), var(--color-gold))',
+              }}
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowStepsModal(true)}
+              className="font-display text-xs tracking-[0.1em] uppercase min-h-[44px] px-4 border rounded-[2px] cursor-pointer transition-all duration-150 border-[var(--color-border-bright)] bg-transparent text-[var(--color-text-muted)] hover:border-[var(--color-gold-dim)] hover:text-[var(--color-text)]"
+            >
+              {existingStepCount !== null ? 'Update Steps' : 'Log Steps'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Top row: quests + right column */}
@@ -279,6 +319,13 @@ export default function DashboardPage() {
           onSuccess={() => { setShowWeightModal(false); loadData() }}
         />
       )}
+      {showStepsModal && (
+        <LogStepsModal
+          onClose={() => setShowStepsModal(false)}
+          onSuccess={() => { setShowStepsModal(false); loadData() }}
+          existingStepCount={existingStepCount}
+        />
+      )}
     </div>
   )
 }
@@ -336,6 +383,13 @@ function Stat({
       </p>
     </div>
   )
+}
+
+function getStepGoal(agilityLevel: number): number {
+  if (agilityLevel >= 61) return STEP_GOALS.LEVEL_61
+  if (agilityLevel >= 41) return STEP_GOALS.LEVEL_41
+  if (agilityLevel >= 21) return STEP_GOALS.LEVEL_21
+  return STEP_GOALS.LEVEL_1
 }
 
 function getGreeting() {

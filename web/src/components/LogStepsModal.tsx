@@ -1,25 +1,29 @@
 import { useState } from 'react'
-import { logWeight } from '../api/activity'
+import { syncSteps } from '../api/activity'
 import Button from './Button'
 import Input from './Input'
 
-interface LogWeightModalProps {
+interface LogStepsModalProps {
   onClose: () => void
   onSuccess: () => void
+  existingStepCount: number | null
 }
 
-export default function LogWeightModal({ onClose, onSuccess }: LogWeightModalProps) {
-  const [weight, setWeight] = useState('')
+export default function LogStepsModal({ onClose, onSuccess, existingStepCount }: LogStepsModalProps) {
+  const [stepCount, setStepCount] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [resultXp, setResultXp] = useState<{ xp: number; skill: string } | null>(null)
 
+  const isUpdate = existingStepCount !== null
+  const label = isUpdate ? 'Update Steps' : 'Log Steps'
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const value = parseFloat(weight)
-    if (isNaN(value) || value <= 0) {
-      setError('Please enter a valid weight.')
+    const value = parseInt(stepCount, 10)
+    if (isNaN(value) || value < 0 || stepCount.includes('.')) {
+      setError('Please enter a valid step count.')
       return
     }
 
@@ -27,7 +31,7 @@ export default function LogWeightModal({ onClose, onSuccess }: LogWeightModalPro
     setLoading(true)
 
     try {
-      const response = await logWeight({ weightLbs: value })
+      const response = await syncSteps(value)
       setResult(response.message)
       setResultXp({ xp: response.xpAwarded, skill: response.skillTrained })
       setTimeout(onSuccess, 1200)
@@ -49,7 +53,7 @@ export default function LogWeightModal({ onClose, onSuccess }: LogWeightModalPro
       >
         {/* Header — always visible */}
         <div className="shrink-0 px-5 py-4 border-b border-(--color-border) flex justify-between items-center">
-          <h2 className="text-base">Log Weight</h2>
+          <h2 className="text-base">{label}</h2>
           <button
             onClick={onClose}
             className="flex items-center justify-center min-w-11 min-h-11 bg-transparent border-none text-(--color-text-muted) cursor-pointer text-[1.2rem] leading-none"
@@ -72,19 +76,34 @@ export default function LogWeightModal({ onClose, onSuccess }: LogWeightModalPro
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <Input
-                label="Weight (lbs)"
+                label="Steps walked today"
                 type="number"
-                step="0.1"
                 min="0"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                step="1"
+                value={stepCount}
+                onChange={(e) => setStepCount(e.target.value)}
                 error={error}
                 autoFocus
-                placeholder="e.g. 210.5"
+                placeholder={existingStepCount !== null ? String(existingStepCount) : ''}
               />
-              <Button type="submit" loading={loading} disabled={!weight}>
-                Log Weight
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={onClose}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  loading={loading}
+                  disabled={!stepCount}
+                  className="flex-1"
+                >
+                  {label}
+                </Button>
+              </div>
             </form>
           )}
         </div>

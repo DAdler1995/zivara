@@ -4,6 +4,7 @@ import type {
   LogWorkoutRequest,
   LogWeightRequest,
   LogWaterRequest,
+  SyncStepsRequest,
 } from '@zivara/shared'
 
 export interface ActivityResponse {
@@ -60,5 +61,12 @@ export async function checkIn(): Promise<ActivityResponse> {
 
 export async function getTodayActivity(): Promise<TodayActivityResponse> {
   const response = await client.get<TodayActivityResponse>('/activity/today')
+  return response.data
+}
+
+export async function syncSteps(stepCount: number): Promise<ActivityResponse> {
+  const today = new Date().toISOString().slice(0, 10)
+  const request: SyncStepsRequest = { date: today, stepCount }
+  const response = await client.post<ActivityResponse>('/steps/sync', request)
   return response.data
 }

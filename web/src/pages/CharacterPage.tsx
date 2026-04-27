@@ -37,7 +37,7 @@ const SOURCE_LABELS: Record<string, string> = {
 
 export default function CharacterPage() {
   usePageTitle('Character')
-  const { character } = useAuth()
+  const { character, refreshCharacter } = useAuth()
   const [events, setEvents] = useState<XpEventDto[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null)
@@ -47,11 +47,14 @@ export default function CharacterPage() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await getEventLog(1, 50)
+        const [data] = await Promise.all([
+          getEventLog(1, 50),
+          refreshCharacter(),
+        ])
         setEvents(data)
         setHasMore(data.length === 50)
       } catch (err) {
-        console.error('Failed to load event log', err)
+        console.error('Failed to load character data', err)
       } finally {
         setLoadingEvents(false)
       }
