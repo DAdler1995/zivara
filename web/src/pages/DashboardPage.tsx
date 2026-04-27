@@ -52,15 +52,18 @@ export default function DashboardPage() {
 
     async function load() {
       try {
-        const [activityData, questsData, jarData] = await Promise.all([
+        const [activityData, questsData, jarData, googleStatus] = await Promise.all([
           getTodayActivity(),
           getDailyQuests(),
           getJarSummary(),
+          getGoogleFitStatus(),
+          refreshCharacter(),
         ])
         if (cancelled) return
         setActivity(activityData)
         setQuests(questsData)
         setJar(jarData)
+        setGoogleFitStatus(googleStatus)
       } catch (err) {
         console.error('Failed to load dashboard data', err)
       } finally {
@@ -70,7 +73,7 @@ export default function DashboardPage() {
 
     load()
     return () => { cancelled = true }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleCheckIn() {
     try {
