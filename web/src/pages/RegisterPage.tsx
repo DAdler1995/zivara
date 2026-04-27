@@ -48,82 +48,29 @@ export default function RegisterPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--color-bg)',
-        padding: '2rem',
-      }}
-    >
+    <div className="min-h-screen flex items-center justify-center bg-(--color-bg) p-8">
       <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundImage: `radial-gradient(ellipse at 50% 0%, #1a1408 0%, transparent 70%)`,
-          pointerEvents: 'none',
-        }}
+        className="fixed inset-0 pointer-events-none"
+        style={{ backgroundImage: 'radial-gradient(ellipse at 50% 0%, #1a1408 0%, transparent 70%)' }}
       />
 
-      <div style={{ width: '100%', maxWidth: '420px', position: 'relative' }}>
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h1
-            style={{
-              fontSize: '3rem',
-              letterSpacing: '0.15em',
-              color: 'var(--color-gold)',
-              marginBottom: '0.5rem',
-            }}
-          >
-            Zivara
-          </h1>
-          <p
-            style={{
-              color: 'var(--color-text-muted)',
-              fontStyle: 'italic',
-              fontSize: '1rem',
-            }}
-          >
-            Every journey begins with a single step.
-          </p>
+      <div className="w-full max-w-105 relative">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl tracking-[0.15em] mb-2">Zivara</h1>
+          <p className="text-(--color-text-muted) italic text-base">Every journey begins with a single step.</p>
         </div>
 
-        <div
-          style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '4px',
-            padding: '2rem',
-          }}
-        >
+        <div className="bg-(--color-surface) border border-(--color-border) rounded-sm p-8">
           <div
-            style={{
-              height: '2px',
-              background: 'linear-gradient(90deg, transparent, var(--color-gold), transparent)',
-              marginBottom: '1.75rem',
-              marginTop: '-2rem',
-              marginLeft: '-2rem',
-              marginRight: '-2rem',
-            }}
+            className="h-0.5 -mt-8 -mx-8 mb-7"
+            style={{ background: 'linear-gradient(90deg, transparent, var(--color-gold), transparent)' }}
           />
 
-          <h2
-            style={{
-              fontSize: '1rem',
-              marginBottom: '1.5rem',
-              color: 'var(--color-text-muted)',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 400,
-              letterSpacing: '0.1em',
-              textAlign: 'center',
-            }}
-          >
+          <h2 className="text-base mb-6 text-(--color-text-muted) font-normal tracking-widest text-center">
             Create Account
           </h2>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Input
               label="Username"
               type="text"
@@ -153,31 +100,20 @@ export default function RegisterPage() {
             />
 
             {errors.general && (
-              <p style={{ color: 'var(--color-red-bright)', fontSize: '0.9rem', textAlign: 'center' }}>
-                {errors.general}
-              </p>
+              <p className="text-(--color-red-bright) text-[0.9rem] text-center">{errors.general}</p>
             )}
 
-            <Button type="submit" loading={loading} style={{ marginTop: '0.5rem' }}>
+            <Button type="submit" loading={loading} className="mt-2">
               Create Account
             </Button>
           </form>
         </div>
 
-        <p
-          style={{
-            textAlign: 'center',
-            marginTop: '1.5rem',
-            color: 'var(--color-text-muted)',
-            fontSize: '0.95rem',
-          }}
-        >
+        <p className="text-center mt-6 text-(--color-text-muted) text-[0.95rem]">
           Already have an account?{' '}
           <Link
             to="/login"
-            style={{ color: 'var(--color-gold-dim)', textDecoration: 'none' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-gold)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-gold-dim)')}
+            className="text-(--color-gold-dim) no-underline transition-colors duration-150 hover:text-(--color-gold)"
           >
             Enter the realm
           </Link>

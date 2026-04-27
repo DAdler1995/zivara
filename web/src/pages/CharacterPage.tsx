@@ -113,7 +113,7 @@ export default function CharacterPage() {
             <div key={skill.skillType} className="border-b border-(--color-border)">
               <div
                 onClick={() => setExpandedSkill(isExpanded ? null : skill.skillType)}
-                className="grid grid-cols-[140px_1fr_80px] gap-4 items-center min-h-11 px-4 py-3 cursor-pointer hover:bg-(--color-surface-raised) transition-colors duration-150"
+                className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr_80px] gap-3 md:gap-4 items-center min-h-11 px-4 py-3 cursor-pointer hover:bg-(--color-surface-raised) transition-colors duration-150"
               >
                 {/* Skill name and level */}
                 <div className="flex items-center gap-3">
@@ -148,7 +148,7 @@ export default function CharacterPage() {
                 </div>
 
                 {/* Total XP */}
-                <div className="text-right">
+                <div className="text-right hidden md:block">
                   <p className="font-display text-[0.75rem] text-(--color-text-faint) tracking-wider">
                     {skill.totalXP.toLocaleString()}
                   </p>
@@ -158,7 +158,7 @@ export default function CharacterPage() {
 
               {/* Expanded skill detail */}
               {isExpanded && desc && (
-                <div className="pl-10 pr-4 pt-3 pb-4 bg-(--color-surface-raised) border-t border-(--color-border) grid grid-cols-2 gap-4">
+                <div className="pl-6 md:pl-10 pr-4 pt-3 pb-4 bg-(--color-surface-raised) border-t border-(--color-border) grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-text-faint) mb-[0.3rem]">
                       Combat Role

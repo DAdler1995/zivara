@@ -3,49 +3,20 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string
 }
 
-export default function Input({ label, error, ...props }: InputProps) {
+export default function Input({ label, error, className, ...props }: InputProps) {
   return (
     <div className="flex flex-col gap-1">
-      <label
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: '0.75rem',
-          letterSpacing: '0.1em',
-          color: 'var(--color-gold-dim)',
-          textTransform: 'uppercase',
-        }}
-      >
+      <label className="font-display text-[0.75rem] tracking-widest uppercase text-(--color-gold-dim)">
         {label}
       </label>
       <input
         {...props}
-        style={{
-          background: 'var(--color-surface)',
-          border: `1px solid ${error ? 'var(--color-red-bright)' : 'var(--color-border-bright)'}`,
-          borderRadius: '2px',
-          color: 'var(--color-text)',
-          padding: '0.6rem 0.75rem',
-          fontSize: '1rem',
-          fontFamily: 'var(--font-body)',
-          outline: 'none',
-          transition: 'border-color 0.15s',
-          width: '100%',
-        }}
-        onFocus={(e) => {
-          e.target.style.borderColor = 'var(--color-gold)'
-          props.onFocus?.(e)
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = error
-            ? 'var(--color-red-bright)'
-            : 'var(--color-border-bright)'
-          props.onBlur?.(e)
-        }}
+        className={`bg-(--color-surface) border rounded-xs text-(--color-text) px-3 py-[0.6rem] text-base font-body outline-none transition-colors duration-150 w-full focus:border-(--color-gold) ${
+          error ? 'border-(--color-red-bright)' : 'border-(--color-border-bright)'
+        } ${className ?? ''}`}
       />
       {error && (
-        <span style={{ color: 'var(--color-red-bright)', fontSize: '0.85rem' }}>
-          {error}
-        </span>
+        <span className="text-(--color-red-bright) text-[0.85rem]">{error}</span>
       )}
     </div>
   )
